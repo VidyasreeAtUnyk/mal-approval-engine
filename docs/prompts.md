@@ -159,3 +159,48 @@ Scaffold all types, core lib files, flow configs + schemas, and all unit tests. 
 ### Next
 - Phase 4: Auth (middleware, login page, useProfile hook, RoleGuard)
 - Phase 5: Engine components (Header, Sidebar, StatusBadge, AIInsight, ApprovalForm, CalendarField, RequestCard, ApproverView)
+
+---
+
+## Phase 4+5 — Auth + Engine Components — 2026-06-13
+
+### Prompt
+Build the full auth layer and all engine components. npm test + npm run build must pass.
+
+### Built
+**Auth (Phase 4)**
+- `middleware.ts` — session refresh via `@supabase/ssr`, redirects unauthenticated users to `/login`, passes through `/login`, `/invite`, `/_next`, `/api/auth`
+- `src/app/(auth)/layout.tsx` — centered card layout for auth pages
+- `src/app/(auth)/login/page.tsx` — email/password login, role-based redirect after sign-in (employee→/dashboard, manager→/manager/dashboard, admin→/admin/dashboard)
+- `src/hooks/useProfile.ts` — client-side hook, fetches profile from `profiles` table, returns `{ profile, loading }`
+- `src/components/layout/RoleGuard.tsx` — wraps pages, redirects wrong roles to `/dashboard`, shows skeleton while loading
+- `src/app/providers.tsx` — `ThemeProvider` wrapper (next-themes, class mode)
+- `src/app/layout.tsx` — updated: Providers + Toaster, `suppressHydrationWarning` on `<html>`
+- `src/app/page.tsx` — server-side root redirect based on role
+
+**Engine (Phase 5)**
+- `src/engine/StatusBadge.tsx` — draft/pending/approved/rejected with Mal tokens, no hardcoded hex
+- `src/engine/AIInsight.tsx` — summary + flags display with Sparkles icon, skeleton loading state
+- `src/engine/RequestCard.tsx` — request summary card with flow label, primary value, amount, status badge, relative time, AI flag indicator
+- `src/engine/CalendarField.tsx` — react-day-picker v10 range picker, Mal token class names
+- `src/engine/ApprovalForm.tsx` — config-driven: handles all 7 field types, react-hook-form Controller, AI assist button on aiAssist textarea fields, idempotency key ref
+- `src/engine/ApproverView.tsx` — full request detail: form data grid, AI insight, approve/reject with note validation, audit log timeline
+- `src/components/layout/Header.tsx` — logo, dark mode toggle, user avatar + name + role, sign-out
+- `src/components/layout/Sidebar.tsx` — role-filtered nav (new request flows, my requests, approvals, admin links)
+- `src/app/(app)/layout.tsx` — authenticated shell: Header + Sidebar + main content
+
+**Deps added**: `next-themes`
+
+### Decisions
+- `ApprovalForm` uses react-hook-form `Controller` with dynamic field rendering — no per-flow form component needed
+- Root `page.tsx` is a server component doing the role redirect — avoids client-side flash
+- Notification bell in `Header` is a portal placeholder (`div#notification-bell-portal`) — replaced in Phase 8
+- `useProfile` is a client hook intentionally — server-reads happen in API routes and page.tsx; the hook serves interactive components
+
+### Gotchas
+- `react/no-unescaped-entities` ESLint rule blocked build for `"entry.note"` in JSX — fixed with `&ldquo;`/`&rdquo;`
+- `next-themes` requires `suppressHydrationWarning` on `<html>` to avoid SSR mismatch
+
+### Next
+- Phase 6: API routes (POST /api/requests, approve, reject, ai/summarize, ai/assist)
+- Phase 7: Pages (employee dashboard, new request, manager dashboard, admin dashboard, user management)
