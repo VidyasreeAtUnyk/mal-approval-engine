@@ -204,3 +204,32 @@ Build the full auth layer and all engine components. npm test + npm run build mu
 ### Next
 - Phase 6: API routes (POST /api/requests, approve, reject, ai/summarize, ai/assist)
 - Phase 7: Pages (employee dashboard, new request, manager dashboard, admin dashboard, user management)
+
+---
+
+## Phase 6 — API Routes — 2026-06-13
+
+### Prompt
+Build all API routes following the security pattern from docs/security.md. Every route: session check → role from DB → input validation → action. Add anthropic.test.ts.
+
+### Built
+- `src/lib/schema-registry.ts` — maps flow_type → Zod schema for server-side validation
+- `src/app/api/requests/route.ts` — POST (submit/draft) + GET (list own requests). Upsert with idempotency_key, getApprover(), audit log, notification, fire-and-forget AI summarize
+- `src/app/api/requests/[id]/approve/route.ts` — POST: manager/admin only, approver_id check, status→approved, audit + notify requester
+- `src/app/api/requests/[id]/reject/route.ts` — POST: note required, status→rejected, audit + notify requester
+- `src/app/api/ai/summarize/route.ts` — fetches request, calls claude-sonnet-4-6, parses JSON response, stores ai_summary + ai_flags, returns fallback on any error
+- `src/app/api/ai/assist/route.ts` — takes fieldId + filled formData, calls Claude to draft textarea content, returns { text }
+- `src/__tests__/anthropic.test.ts` — 5 tests mocking @/lib/anthropic: success, API throw, malformed JSON, empty content, context inclusion
+
+### Decisions
+- AI summarize is fire-and-forget from POST /api/requests — doesn't block the 201 response. Uses internal fetch with session cookie forwarding
+- Approve/reject both verify `approver_id = auth.uid()` at query level — RLS + explicit check = double protection
+- Schema validation only runs when status==='pending', not on draft saves
+- `schema-registry.ts` keeps flow-specific schemas server-side only, not imported in client bundle
+
+### Gotchas
+- `jest.mock('@anthropic-ai/sdk')` with dynamic `import()` inside test function doesn't receive the mock — fixed by mocking `@/lib/anthropic` singleton instead
+- `response.content[0]?.type === 'text'` type narrowing needed for TypeScript to allow `.text` access on the union type
+
+### Next
+- Phase 7: All pages (employee dashboard, new request page, request detail, manager dashboard, admin dashboard, user management)
