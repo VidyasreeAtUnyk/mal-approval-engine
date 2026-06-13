@@ -110,3 +110,52 @@ Apply all tables from docs/database.md via MCP in FK-dependency order. Enable RL
 ### Next
 - Phase 2: Scaffold folder structure + write types
 - Phase 3: Core library layer (supabase clients, anthropic, flow registry, schemas, router, audit, notifications)
+
+---
+
+## Phase 2+3 — Types, Lib Layer, Flow Configs, Tests — 2026-06-13
+
+### Prompt
+Scaffold all types, core lib files, flow configs + schemas, and all unit tests. Run npm test + npm run build before committing.
+
+### Built
+**Types**
+- `src/types/profile.types.ts` — `Role`, `Profile`, `Department`
+- `src/types/flow.types.ts` — `FieldType`, `FlowField`, `FlowConfig`, `Request`, `RequestStatus`, `AuditEntry`, `Notification`, `NotificationType`
+
+**Lib**
+- `src/lib/supabase.ts` — browser client via `createBrowserClient`
+- `src/lib/supabase-server.ts` — SSR server client + service role client via `createServerClient` from `@supabase/ssr`
+- `src/lib/anthropic.ts` — singleton `Anthropic` instance, server-only
+- `src/lib/flow-registry.ts` — `FLOW_REGISTRY` array + `getFlow(id)` helper
+- `src/lib/approval-router.ts` — `getApprover()`: employee→manager, manager→admin, admin→self, with no_manager + not_found edge cases
+- `src/lib/audit.ts` — `logStatusChange()`: inserts to `request_audit_log`, never throws
+- `src/lib/notifications.ts` — `createNotification()` + `buildNotification()`: non-throwing, covers all 4 notification types
+
+**Flow configs**
+- `src/flows/budget-request/config.ts` — 6 fields, aiAssistEnabled, aiPromptContext
+- `src/flows/budget-request/schema.ts` — Zod v4 schema with `as const` enums
+- `src/flows/leave-request/config.ts` — 4 fields, daterange type
+- `src/flows/leave-request/schema.ts` — date_range refinement (from ≤ to)
+
+**Tests — 55 passing across 6 suites**
+- `src/__tests__/approval-router.test.ts` — 4 cases
+- `src/__tests__/audit.test.ts` — 5 cases
+- `src/__tests__/notifications.test.ts` — 9 cases
+- `src/lib/flow-registry.test.ts` — 8 cases
+- `src/flows/budget-request/schema.test.ts` — 14 cases
+- `src/flows/leave-request/schema.test.ts` — 9 cases
+
+### Decisions
+- Used `createBrowserClient` / `createServerClient` from `@supabase/ssr` (not the legacy helpers) for Next.js 14 App Router compatibility
+- `createServiceClient()` exported separately for API routes that need to bypass RLS
+- `approval-router` reads role from DB on every call — never trusts any client-passed role
+
+### Gotchas
+- **Zod v4 breaking changes**: `required_error` / `invalid_type_error` options removed from `z.number()` and `z.enum()`. Fixed: removed constructor options; use `{ error: '...' }` for enum params and rely on `.positive()` for number validation
+- **ESLint unused vars**: two leftover variables in test files (`makeMockSupabase`, `insertCall`) blocked `npm run build` — removed
+- Zod v4 `z.enum()` requires `as const` tuple, not a plain `string[]`
+
+### Next
+- Phase 4: Auth (middleware, login page, useProfile hook, RoleGuard)
+- Phase 5: Engine components (Header, Sidebar, StatusBadge, AIInsight, ApprovalForm, CalendarField, RequestCard, ApproverView)
