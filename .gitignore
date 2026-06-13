@@ -24,3 +24,6 @@ Thumbs.db
 
 # Supabase
 supabase/.temp/
+
+# Local config
+claude_desktop_config.json

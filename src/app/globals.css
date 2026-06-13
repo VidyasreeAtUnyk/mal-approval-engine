@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* shadcn semantic tokens */
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 270 60% 45%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 270 30% 95%;
+    --accent-foreground: 270 60% 35%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 270 60% 45%;
+    --radius: 0.5rem;
+
+    /* Mal design tokens */
+    --mal-bg-white-0: #ffffff;
+    --mal-bg-weak-50: #f8f8f8;
+    --mal-bg-soft-200: #e9e9e9;
+    --mal-bg-strong-950: #0d0d0d;
+    --mal-text-strong-950: #0d0d0d;
+    --mal-text-sub-600: #6b6b6b;
+    --mal-text-soft-400: #9e9e9e;
+    --mal-text-white-0: #ffffff;
+    --mal-purple-500: #7c3aed;
+    --mal-purple-600: #6d28d9;
+    --mal-alpha-purple-8: rgba(124, 58, 237, 0.08);
+    --mal-alpha-purple-10: rgba(124, 58, 237, 0.10);
+    --mal-alpha-purple-24: rgba(124, 58, 237, 0.24);
+    --mal-stroke-soft-200: #e9e9e9;
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 5.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 5.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 270 60% 60%;
+    --primary-foreground: 240 10% 3.9%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 270 20% 15%;
+    --accent-foreground: 270 60% 70%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 270 60% 60%;
+
+    /* Mal design tokens — dark */
+    --mal-bg-white-0: #1a1a1a;
+    --mal-bg-weak-50: #1f1f1f;
+    --mal-bg-soft-200: #2a2a2a;
+    --mal-bg-strong-950: #f5f5f5;
+    --mal-text-strong-950: #f5f5f5;
+    --mal-text-sub-600: #9e9e9e;
+    --mal-text-soft-400: #6b6b6b;
+    --mal-text-white-0: #0d0d0d;
+    --mal-purple-500: #a855f7;
+    --mal-purple-600: #9333ea;
+    --mal-alpha-purple-8: rgba(168, 85, 247, 0.08);
+    --mal-alpha-purple-10: rgba(168, 85, 247, 0.10);
+    --mal-alpha-purple-24: rgba(168, 85, 247, 0.24);
+    --mal-stroke-soft-200: #2a2a2a;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
