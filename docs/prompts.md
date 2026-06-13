@@ -78,3 +78,35 @@ Bootstrap Next.js 14 project in the existing repo directory, install all depende
 
 ### Next
 - Phase 1: Apply Supabase schema + RLS via MCP
+
+---
+
+## Phase 1 — Supabase Schema + RLS — 2026-06-13
+
+### Prompt
+Apply all tables from docs/database.md via MCP in FK-dependency order. Enable RLS immediately after each table. Apply all policies. Seed departments and profiles using provided Auth UUIDs.
+
+### Built
+- `departments` — created, RLS on, `departments_read_all` + `admins_manage_departments` policies
+- `profiles` — created, RLS on, `profiles_own` + `managers_see_team` + `admins_all_profiles` policies; FK to `auth.users`, self-referential `manager_id`
+- `departments.head_id` FK to `profiles` added in second migration (circular dep resolved by deferring)
+- `requests` — created, RLS on, 4 policies: employee-own, manager-team-select, manager-team-update, admin-all
+- `request_audit_log` — created, RLS on, 2 policies: own-request-select, admin-all
+- `notifications` — created, RLS on, `own_notifications` policy
+- `invites` — created, RLS on, `admins_manage_invites` policy
+- 10 indexes on requests, notifications, profiles
+- `update_updated_at()` trigger on `requests`
+- 3 departments seeded: Engineering, Finance, Operations
+- 3 profiles seeded: admin → manager → employee (Engineering dept, correct manager_id chain)
+
+### Decisions
+- `departments` admin policy deferred to a second migration because it references `profiles` which didn't exist yet; `head_id` FK also added in same second migration
+- Seed inserted admin first (no FK deps), then manager (refs admin), then employee (refs manager) — order matters due to `manager_id` FK
+
+### Gotchas
+- Employee UUID provided in prompt was truncated by one char (`540f07f9faf` = 11 chars). Looked up real UUID from `auth.users`: `f56a81ea-c742-483f-99ce-540f07f9fafb`
+- `create-next-app` issue from Phase 0 (carried forward for reference): any existing files in dir cause refusal
+
+### Next
+- Phase 2: Scaffold folder structure + write types
+- Phase 3: Core library layer (supabase clients, anthropic, flow registry, schemas, router, audit, notifications)
