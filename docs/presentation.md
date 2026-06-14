@@ -189,14 +189,15 @@ You said the prototype is the thing, and sometimes it ships.
 You said in the first 60 days, document your workflow
 for the team.
 
-I didn't wait to get hired to start doing that.
+I approached this the way I'd work if I were already on the team.
 
-The build log is already written.
-The playbook already exists.
-The engine is already reusable.
+The build log is written, the decisions are documented,
+the engine is reusable by anyone who reads the docs.
 
-That's not preparation for this role.
-That's how I work."
+I wanted this to feel like something a teammate handed over —
+not a portfolio piece.
+
+That's the kind of contributor I want to be at Mal."
 
 ---
 

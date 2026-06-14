@@ -8,7 +8,20 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 
 export const metadata: Metadata = {
   title: 'Mal Approval Engine',
-  description: 'Config-driven multi-flow approval system',
+  description: 'Config-driven, multi-flow internal approval engine. Budget requests, leave, and more — one platform, every flow is a config file.',
+  metadataBase: new URL('https://mal-approval-engine.vercel.app'),
+  openGraph: {
+    title: 'Mal Approval Engine',
+    description: 'Config-driven, multi-flow internal approval engine. Budget requests, leave, and more — one platform, every flow is a config file.',
+    url: 'https://mal-approval-engine.vercel.app',
+    siteName: 'Mal Approval Engine',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Mal Approval Engine',
+    description: 'Config-driven, multi-flow internal approval engine. Budget requests, leave, and more — one platform, every flow is a config file.',
+  },
 }
 
 export default function RootLayout({
