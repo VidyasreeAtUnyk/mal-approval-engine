@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase'
 import { useProfile } from '@/hooks/useProfile'
 import { Button } from '@/components/ui/button'
 import { Sun, Moon, LogOut } from 'lucide-react'
+import { NotificationBell } from './NotificationBell'
 
 export function Header() {
   const { theme, setTheme } = useTheme()
@@ -33,8 +34,7 @@ export function Header() {
 
       {/* Right side */}
       <div className="flex items-center gap-2">
-        {/* Notification bell placeholder — replaced in Phase 8 */}
-        <div id="notification-bell-portal" />
+        <NotificationBell />
 
         {/* Dark mode toggle */}
         <Button

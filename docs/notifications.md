@@ -3,8 +3,8 @@
 ## Overview
 
 Two delivery channels:
-1. In-app realtime (Supabase Realtime) — built now
-2. Email (Supabase Edge Functions) — noted as next step
+1. In-app realtime (Supabase Realtime) — built in Phase 8
+2. Email (Supabase Edge Functions) — future phase
 
 ---
 
@@ -12,90 +12,37 @@ Two delivery channels:
 
 | Event | Who gets notified | Type |
 |---|---|---|
-| Request submitted | Approver | request_pending_review |
+| Employee submits request | Their manager | request_pending_review |
+| Manager submits request | Admin | request_pending_review |
 | Request approved | Requester | request_approved |
 | Request rejected | Requester | request_rejected |
-| Request pending >24h | Approver reminder | request_pending_review |
+
+---
+
+## Key Design Decisions
+
+**Service client for inserts** — `createNotification` uses `createServiceClient()`, not the session-scoped client. The `own_notifications` RLS policy restricts inserts to `user_id = auth.uid()`, which means a route acting as employee can't insert a notification for the manager. Service role bypasses this.
+
+**Approval router uses service client for admin lookup** — `getApprover()` uses the session client for the requester's own profile (always readable), but switches to service client when looking up the admin profile for manager→admin routing. Managers can't read other profiles under RLS.
+
+**Realtime filter is required** — The channel subscription includes `filter: \`user_id=eq.${userId}\`` to scope events to the logged-in user. Without it, Supabase sends all table events and drops them silently at the RLS layer — the subscription appears to work but never fires.
 
 ---
 
 ## Creating Notifications
 
 ```typescript
-// lib/notifications.ts
-
-export type NotificationType =
-  | 'request_submitted'
-  | 'request_approved'
-  | 'request_rejected'
-  | 'request_pending_review'
-
-export async function createNotification(
-  userId: string,
-  requestId: string,
-  type: NotificationType,
-  title: string,
-  message: string,
-  supabase: SupabaseClient
-): Promise<void> {
-  const { error } = await supabase
-    .from('notifications')
-    .insert({
-      user_id: userId,
-      request_id: requestId,
-      type,
-      title,
-      message
-    })
-
-  if (error) {
-    // Log but don't throw — notifications are
-    // non-critical, don't block the main flow
-    console.error('Notification failed:', error)
-  }
-}
+// lib/notifications.ts — uses service client internally
+await createNotification(
+  userId,       // recipient
+  requestId,
+  'request_approved',
+  title,
+  message
+)
 ```
 
----
-
-## Notification Messages
-
-```typescript
-export function buildNotification(
-  type: NotificationType,
-  requesterName: string,
-  flowLabel: string,
-  approverNote?: string
-): { title: string; message: string } {
-  switch (type) {
-    case 'request_pending_review':
-      return {
-        title: `New ${flowLabel}`,
-        message: `${requesterName} submitted 
-          a ${flowLabel.toLowerCase()} 
-          awaiting your review.`
-      }
-    case 'request_approved':
-      return {
-        title: `${flowLabel} Approved`,
-        message: approverNote
-          ? `Your request was approved. 
-             Note: ${approverNote}`
-          : `Your ${flowLabel.toLowerCase()} 
-             has been approved.`
-      }
-    case 'request_rejected':
-      return {
-        title: `${flowLabel} Rejected`,
-        message: approverNote
-          ? `Your request was rejected. 
-             Reason: ${approverNote}`
-          : `Your ${flowLabel.toLowerCase()} 
-             was not approved.`
-      }
-  }
-}
-```
+Never pass a supabase client — the function creates its own service client.
 
 ---
 
@@ -104,158 +51,57 @@ export function buildNotification(
 ```typescript
 // hooks/useNotifications.ts
 
-export function useNotifications(userId: string) {
-  const [notifications, setNotifications] =
-    useState<Notification[]>([])
-  const [unreadCount, setUnreadCount] =
-    useState(0)
-
-  useEffect(() => {
-    // Initial fetch
-    fetchNotifications()
-
-    // Realtime subscription
-    const channel = supabase
-      .channel(`notifications:${userId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${userId}`
-        },
-        (payload) => {
-          // Add to list
-          setNotifications(prev =>
-            [payload.new as Notification, ...prev]
-          )
-          // Increment counter
-          setUnreadCount(prev => prev + 1)
-          // Show toast
-          toast(payload.new.title, {
-            description: payload.new.message
-          })
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [userId])
-
-  async function markAsRead(notificationId: string) {
-    await supabase
-      .from('notifications')
-      .update({ read_at: new Date().toISOString() })
-      .eq('id', notificationId)
-
-    setNotifications(prev =>
-      prev.map(n =>
-        n.id === notificationId
-          ? { ...n, read_at: new Date().toISOString() }
-          : n
-      )
-    )
-    setUnreadCount(prev => Math.max(0, prev - 1))
-  }
-
-  return { notifications, unreadCount, markAsRead }
-}
+const channel = supabase
+  .channel(`notifications:${userId}`)
+  .on('postgres_changes', {
+    event: '*',
+    schema: 'public',
+    table: 'notifications',
+    filter: `user_id=eq.${userId}`,   // required
+  }, () => {
+    fetchNotifications()              // refetch on any change
+  })
+  .subscribe()
 ```
+
+The hook also subscribes to `requests` table updates via `RequestStatusWatcher` on the detail page — when a request is approved, the status badge and audit log update live without page reload.
 
 ---
 
-## UI — Notification Bell
+## Tables in supabase_realtime Publication
 
-```typescript
-// components/layout/NotificationBell.tsx
-
-export function NotificationBell() {
-  const { profile } = useProfile()
-  const { notifications, unreadCount, markAsRead } =
-    useNotifications(profile.id)
-
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon"
-          className="relative">
-          <Bell className="h-5 w-5" />
-          {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1
-              flex h-5 w-5 items-center justify-center
-              rounded-full bg-[var(--mal-purple-500)]
-              text-xs text-white font-medium">
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </span>
-          )}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-80 p-0">
-        <NotificationList
-          notifications={notifications}
-          onMarkAsRead={markAsRead}
-        />
-      </PopoverContent>
-    </Popover>
-  )
-}
-```
+Both added via migration:
+- `notifications` — for the bell
+- `requests` — for `RequestStatusWatcher` on detail page
 
 ---
 
-## Where Notifications Are Created
+## RLS Policies on notifications
 
-In API routes, after status changes:
-
-```typescript
-// app/api/requests/[id]/approve/route.ts
-
-// After updating request status:
-await createNotification(
-  request.requester_id,
-  request.id,
-  'request_approved',
-  ...buildNotification(
-    'request_approved',
-    requesterProfile.name,
-    flowConfig.label,
-    approverNote
-  ),
-  supabase
-)
-
-// Also log the audit entry
-await logStatusChange(
-  request.id,
-  user.id,
-  'pending',
-  'approved',
-  approverNote,
-  supabase
-)
-```
+| Policy | Operation | Rule |
+|---|---|---|
+| notifications_select | SELECT | `user_id = auth.uid()` |
+| notifications_update | UPDATE | `user_id = auth.uid()` |
+| notifications_insert | INSERT | `WITH CHECK (true)` — server only via service role |
 
 ---
 
-## Email Notifications (Next Step)
+## Navigation from Bell
 
-Not built in prototype — mentioned in presentation.
+The bell uses notification `type` + viewer `role` to build the correct link:
 
-Would use Supabase Edge Functions:
-1. Trigger on notification INSERT
-2. Read user email from profiles
-3. Send via Resend or Supabase SMTP
+| Type | Role | Navigates to |
+|---|---|---|
+| request_pending_review | manager | /manager/request/{id} |
+| request_pending_review | admin | /admin/request/{id} |
+| request_approved / rejected | employee | /{flow_type}/{id} |
 
-```typescript
-// supabase/functions/send-notification-email/
-// index.ts (edge function)
+`flow_type` is fetched via join: `select('*, requests(flow_type)')`.
 
-Deno.serve(async (req) => {
-  const { record } = await req.json()
-  // Send email for record.user_id
-  // with record.title and record.message
-})
-```
+---
+
+## Email Notifications (Future)
+
+Would use Supabase Edge Functions triggered on notification INSERT:
+1. Read user email from profiles
+2. Send via Resend or Supabase SMTP

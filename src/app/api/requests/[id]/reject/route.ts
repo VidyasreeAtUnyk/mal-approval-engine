@@ -96,7 +96,7 @@ export async function POST(
     flow?.label ?? request.flow_type,
     note
   )
-  await createNotification(request.requester_id, params.id, 'request_rejected', title, message, supabase)
+  await createNotification(request.requester_id, params.id, 'request_rejected', title, message)
 
   return NextResponse.json({ data: { status: 'rejected' } })
 }

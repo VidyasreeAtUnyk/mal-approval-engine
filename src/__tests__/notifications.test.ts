@@ -1,20 +1,23 @@
-import { createNotification, buildNotification } from '@/lib/notifications'
-import { SupabaseClient } from '@supabase/supabase-js'
+import { buildNotification } from '@/lib/notifications'
 
-function makeMock(error: unknown = null) {
-  return {
-    from: jest.fn().mockReturnValue({
-      insert: jest.fn().mockResolvedValue({ error }),
-    }),
-  } as unknown as SupabaseClient
-}
+const mockInsert = jest.fn().mockResolvedValue({ error: null })
+
+jest.mock('@/lib/supabase-server', () => ({
+  createServiceClient: jest.fn(() => ({
+    from: jest.fn().mockReturnValue({ insert: mockInsert }),
+  })),
+}))
+
+// Import after mock is set up
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { createNotification } = require('@/lib/notifications')
 
 describe('createNotification', () => {
+  beforeEach(() => mockInsert.mockClear())
+
   test('notifies approver when request submitted', async () => {
-    const insertFn = jest.fn().mockResolvedValue({ error: null })
-    const supabase = { from: jest.fn().mockReturnValue({ insert: insertFn }) } as unknown as SupabaseClient
-    await createNotification('approver-1', 'req-1', 'request_pending_review', 'New Budget Request', 'Review needed', supabase)
-    expect(insertFn).toHaveBeenCalledWith(expect.objectContaining({
+    await createNotification('approver-1', 'req-1', 'request_pending_review', 'New Budget Request', 'Review needed')
+    expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({
       user_id: 'approver-1',
       request_id: 'req-1',
       type: 'request_pending_review',
@@ -22,30 +25,24 @@ describe('createNotification', () => {
   })
 
   test('notifies requester when approved', async () => {
-    const insertFn = jest.fn().mockResolvedValue({ error: null })
-    const supabase = { from: jest.fn().mockReturnValue({ insert: insertFn }) } as unknown as SupabaseClient
-    await createNotification('emp-1', 'req-1', 'request_approved', 'Approved', 'Your request was approved.', supabase)
-    expect(insertFn).toHaveBeenCalledWith(expect.objectContaining({ type: 'request_approved' }))
+    await createNotification('emp-1', 'req-1', 'request_approved', 'Approved', 'Your request was approved.')
+    expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({ type: 'request_approved' }))
   })
 
   test('notifies requester when rejected', async () => {
-    const insertFn = jest.fn().mockResolvedValue({ error: null })
-    const supabase = { from: jest.fn().mockReturnValue({ insert: insertFn }) } as unknown as SupabaseClient
-    await createNotification('emp-1', 'req-1', 'request_rejected', 'Rejected', 'Not approved.', supabase)
-    expect(insertFn).toHaveBeenCalledWith(expect.objectContaining({ type: 'request_rejected' }))
+    await createNotification('emp-1', 'req-1', 'request_rejected', 'Rejected', 'Not approved.')
+    expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({ type: 'request_rejected' }))
   })
 
   test('includes correct request_id', async () => {
-    const insertFn = jest.fn().mockResolvedValue({ error: null })
-    const supabase = { from: jest.fn().mockReturnValue({ insert: insertFn }) } as unknown as SupabaseClient
-    await createNotification('user-1', 'req-abc-123', 'request_approved', 'Approved', 'msg', supabase)
-    expect(insertFn).toHaveBeenCalledWith(expect.objectContaining({ request_id: 'req-abc-123' }))
+    await createNotification('user-1', 'req-abc-123', 'request_approved', 'Approved', 'msg')
+    expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({ request_id: 'req-abc-123' }))
   })
 
   test('handles DB error without throwing', async () => {
-    const supabase = makeMock({ message: 'insert failed' })
+    mockInsert.mockResolvedValueOnce({ error: { message: 'insert failed' } })
     await expect(
-      createNotification('u', 'r', 'request_approved', 't', 'm', supabase)
+      createNotification('u', 'r', 'request_approved', 't', 'm')
     ).resolves.toBeUndefined()
   })
 })

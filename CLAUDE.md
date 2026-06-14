@@ -125,7 +125,7 @@ admin@test.com / Test1234!
 - [x] Budget request flow config
 - [x] Engine components built
 - [x] Claude AI summary working
-- [ ] Notifications (realtime)
+- [x] Notifications (realtime)
 - [x] Draft persistence
 - [x] Leave request flow (reusability demo)
 - [x] Calendar conflict detection

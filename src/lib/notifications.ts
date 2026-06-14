@@ -1,14 +1,14 @@
-import { SupabaseClient } from '@supabase/supabase-js'
 import { NotificationType } from '@/types/flow.types'
+import { createServiceClient } from './supabase-server'
 
 export async function createNotification(
   userId: string,
   requestId: string,
   type: NotificationType,
   title: string,
-  message: string,
-  supabase: SupabaseClient
+  message: string
 ): Promise<void> {
+  const supabase = createServiceClient()
   const { error } = await supabase.from('notifications').insert({
     user_id: userId,
     request_id: requestId,
@@ -18,7 +18,6 @@ export async function createNotification(
   })
 
   if (error) {
-    // Non-critical — log but never block the main flow
     console.error('[notifications] createNotification failed:', error.message)
   }
 }

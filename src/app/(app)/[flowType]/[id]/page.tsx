@@ -10,6 +10,7 @@ import { Clock, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { Separator } from '@/components/ui/separator'
 import { WithdrawButton } from '@/engine/WithdrawButton'
+import { RequestStatusWatcher } from '@/engine/RequestStatusWatcher'
 
 export default async function RequestDetailPage({
   params,
@@ -42,6 +43,7 @@ export default async function RequestDetailPage({
 
   return (
     <div className="max-w-xl mx-auto space-y-6">
+      <RequestStatusWatcher requestId={req.id} />
       {/* Back */}
       <Link href="/dashboard"
         className="inline-flex items-center gap-1.5 text-sm text-[var(--mal-text-sub-600)] hover:text-[var(--mal-text-strong-950)] transition-colors">

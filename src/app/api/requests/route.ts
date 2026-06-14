@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
         profile.name,
         flow.label
       )
-      await createNotification(approver_id, request.id, 'request_pending_review', title, message, supabase)
+      await createNotification(approver_id, request.id, 'request_pending_review', title, message)
     }
 
     // Fire-and-forget AI summary — don't await, don't block response

@@ -89,7 +89,7 @@ export async function POST(
     flow?.label ?? request.flow_type,
     note ?? undefined
   )
-  await createNotification(request.requester_id, params.id, 'request_approved', title, message, supabase)
+  await createNotification(request.requester_id, params.id, 'request_approved', title, message)
 
   return NextResponse.json({ data: { status: 'approved' } })
 }

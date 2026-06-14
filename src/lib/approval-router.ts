@@ -1,4 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js'
+import { createServiceClient } from './supabase-server'
 
 export interface ApproverResult {
   approverId: string | null
@@ -9,6 +10,7 @@ export async function getApprover(
   requesterId: string,
   supabase: SupabaseClient
 ): Promise<ApproverResult> {
+  // Use session client for own profile (always readable)
   const { data: profile, error } = await supabase
     .from('profiles')
     .select('role, manager_id, is_active')
@@ -24,7 +26,7 @@ export async function getApprover(
     return { approverId: requesterId, reason: 'self' }
   }
 
-  // Employee routes to their manager
+  // Employee routes to their manager (manager_id is on own profile — readable)
   if (profile.role === 'employee') {
     if (!profile.manager_id) {
       return { approverId: null, reason: 'no_manager' }
@@ -32,9 +34,10 @@ export async function getApprover(
     return { approverId: profile.manager_id, reason: 'manager' }
   }
 
-  // Manager routes to an admin
+  // Manager routes to an admin — cross-profile query, needs service client to bypass RLS
   if (profile.role === 'manager') {
-    const { data: admin } = await supabase
+    const svc = createServiceClient()
+    const { data: admin } = await svc
       .from('profiles')
       .select('id')
       .eq('role', 'admin')

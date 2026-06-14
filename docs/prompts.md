@@ -307,6 +307,52 @@ Build all app pages. Fix bugs found during manual verification. Add draft persis
 
 ### Next
 - Phase 8: Realtime notifications (bell, unread count, mark-read)
+
+---
+
+## Phase 8 — Realtime Notifications — 2026-06-14
+
+### Prompt
+Build notification bell with live updates. Bell shows unread count badge, dropdown lists recent notifications with type-coloured dots and timestamps. Clicking a notification navigates to the correct page based on role and notification type. Opening the bell marks all as read. Request detail page updates live when status changes.
+
+### Built
+- `src/app/api/notifications/route.ts` — GET: list own notifications, joined with `requests(flow_type)`, limit 100, newest first
+- `src/app/api/notifications/read/route.ts` — PATCH: bulk mark all unread as read
+- `src/hooks/useNotifications.ts` — fetches on mount, Supabase Realtime subscription filtered by `user_id=eq.{userId}`, `markAllRead` with optimistic update
+- `src/components/layout/NotificationBell.tsx` — bell + badge (9+ cap), scrollable dropdown (max-h-96), role-aware navigation, auto mark-all-read on open, empty state
+- `src/engine/RequestStatusWatcher.tsx` — zero-render client component, subscribes to `UPDATE` on specific request row, calls `router.refresh()` on change so server component re-renders live
+- Header: replaced `div#notification-bell-portal` placeholder with `<NotificationBell />`
+
+**DB migrations applied:**
+- `enable_notifications_realtime_and_fix_rls` — added `notifications` to `supabase_realtime` publication; split blanket ALL policy into SELECT + UPDATE (own rows) + INSERT (open, service role only)
+- `enable_requests_realtime` — added `requests` to `supabase_realtime` publication for `RequestStatusWatcher`
+
+**Bug fixes discovered and fixed during verification:**
+- `createNotification` used session-scoped client → RLS blocked inserting for another user. Fixed: service client
+- `getApprover` manager→admin lookup used session client → manager's RLS can't read admin profile. Fixed: service client for that query only
+- Realtime channel had no `filter` → events never matched. Fixed: `filter: \`user_id=eq.${userId}\``
+- Notification click hardcoded `/dashboard`. Fixed: role + type → correct URL
+- `supabase_realtime` had zero tables — Realtime was completely non-functional. Fixed via migration
+
+**Tests — 101 passing (2 new):**
+- `approval-router.test.ts` rewritten: mocks `createServiceClient`, adds manager→admin and manager→no-admin cases
+- `notifications.test.ts` rewritten: mocks `createServiceClient` instead of accepting client param
+
+### Decisions
+- `createNotification` owns its own service client — callers never pass a supabase arg. Simpler API, impossible to accidentally use wrong client.
+- Realtime fires a refetch rather than patching state from the payload — simpler, always consistent with DB, no edge cases from partial payloads.
+- Bell auto-marks-all-read on open (not per-item) — matches standard notification UX (Slack, Linear, etc.)
+- `RequestStatusWatcher` renders null — purely a side-effect component, no UI, no layout impact
+
+### Gotchas
+- `own_notifications` RLS was `FOR ALL` with `qual = user_id = auth.uid()` — this applies to INSERT too, blocking server-side cross-user notification creation. Must split into separate SELECT/UPDATE/INSERT policies.
+- `supabase_realtime` publication starts empty in new projects — must explicitly `ALTER PUBLICATION supabase_realtime ADD TABLE <name>` for each table you want broadcast.
+- `createBrowserClient` from `@supabase/ssr` supports Realtime but requires user session to be established before subscribing — hence the `getUser()` call in the hook before setting up the channel.
+- Approval router's manager→admin lookup was RLS-blocked silently — `getApprover` returned `no_manager` and no notification was created. Only caught by manual testing.
+
+### Next
+- Phase 13: Vercel deployment
+- Phase 14: docs/presentation.md completion
 - Phase 9: Draft persistence polish (conflict resolution if same user has draft on two devices)
 - Phase 13: Vercel deployment
 - Phase 14: docs/prompts.md + docs/presentation.md completion
