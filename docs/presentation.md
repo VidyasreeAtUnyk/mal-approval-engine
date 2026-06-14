@@ -99,16 +99,12 @@ Open new window — login as admin@test.com
 - User management — show invite flow
 
 ### Scene 4 — Reusability (the key moment)
-"Adding a new flow takes 2 minutes"
+"Adding a new flow takes two files."
 
-```bash
-/new-flow leave-request "Leave Request"
-```
-
-- Show generated config file
-- Uncomment in flow-registry.ts
-- Leave request form appears with calendar
-- Calendar shows team conflicts
+- Open `src/flows/leave-request/config.ts` — show fields, AI context
+- Open `src/flows/leave-request/schema.ts` — show Zod schema
+- Add the id to `flow-registry.ts` — one line
+- Leave request form appears with calendar, overlap detection, AI summary
 - "That's it. The engine handles everything else."
 
 ---
@@ -124,10 +120,6 @@ Every decision in this log is mine."
 Show commit history:
 "Meaningful commits, logical progression.
 Production discipline on a prototype."
-
-Show Cowork board:
-"I tracked every task and decision in real time.
-This is how I'd work at Mal from day one."
 
 Show ADRs:
 "Six architecture decisions documented before
@@ -198,10 +190,20 @@ Screenshots to take during build:
 
 ---
 
+## Note on Team Practices
+
+This is a solo project — no Cowork board, no PR review process.
+In a team setting at Mal, every task and decision would be tracked
+on the Cowork board, and all changes would go through PR review.
+The commit discipline and docs structure here reflect how I'd work
+in that context from day one.
+
+---
+
 ## Submission Package
 
-- [ ] Live URL (Vercel)
-- [ ] Test accounts (3 roles)
-- [ ] GitHub repo (public)
+- [x] Live URL — https://mal-approval-engine.vercel.app/
+- [x] Test accounts (3 roles)
+- [x] GitHub repo
+- [x] README with setup instructions
 - [ ] This presentation (PDF export)
-- [ ] README with setup instructions

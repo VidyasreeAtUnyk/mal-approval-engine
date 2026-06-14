@@ -1,7 +1,9 @@
 'use client'
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Loader2 } from 'lucide-react'
 
 interface FilterBarProps {
   departments: { id: string; name: string }[]
@@ -24,8 +26,15 @@ export function FilterBar({ departments, flows, current }: FilterBarProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const [loading, setLoading] = useState(false)
+
+  // When searchParams settle (server re-render complete), clear loading
+  useEffect(() => {
+    setLoading(false)
+  }, [searchParams])
 
   function update(key: string, value: string | null) {
+    setLoading(true)
     const params = new URLSearchParams(searchParams.toString())
     if (value && value !== 'all') params.set(key, value)
     else params.delete(key)
@@ -33,7 +42,7 @@ export function FilterBar({ departments, flows, current }: FilterBarProps) {
   }
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <Select value={current.dept ?? 'all'} onValueChange={(v) => update('dept', v ?? null)}>
         <SelectTrigger className="w-44 border-[var(--mal-stroke-soft-200)] h-8 text-sm">
           <SelectValue placeholder="All Departments">
@@ -88,6 +97,10 @@ export function FilterBar({ departments, flows, current }: FilterBarProps) {
           <SelectItem value="month">This Month</SelectItem>
         </SelectContent>
       </Select>
+
+      {loading && (
+        <Loader2 className="h-4 w-4 animate-spin text-[var(--mal-text-soft-400)]" />
+      )}
     </div>
   )
 }

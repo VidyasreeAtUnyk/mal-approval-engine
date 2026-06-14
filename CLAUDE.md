@@ -131,7 +131,7 @@ admin@test.com / Test1234!
 - [x] Calendar conflict detection
 - [x] Admin dashboard
 - [x] Tests passing (99 tests, 11 suites)
-- [ ] Deployed on Vercel
+- [x] Deployed on Vercel — https://mal-approval-engine.vercel.app/
 - [x] docs/prompts.md complete
 - [ ] docs/presentation.md complete
-- [ ] Cowork board updated
+- [x] Cowork board — N/A (solo project; noted in presentation)
