@@ -26,7 +26,7 @@ export function RequestCard({ request, href }: RequestCardProps) {
 
   return (
     <Link href={href}>
-      <div className="group rounded-mal-10 border border-[var(--mal-stroke-soft-200)] bg-[var(--mal-bg-white-0)] p-4 shadow-mal-xs hover:shadow-mal-fancy-neutral hover:border-[var(--mal-alpha-purple-24)] transition-all cursor-pointer">
+      <div className="group rounded-mal-10 border border-[var(--mal-stroke-soft-200)] bg-[var(--mal-bg-white-0)] p-4 shadow-mal-xs hover:shadow-mal-fancy-neutral hover:border-[var(--mal-alpha-purple-24)] transition-all cursor-pointer mb-2">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">

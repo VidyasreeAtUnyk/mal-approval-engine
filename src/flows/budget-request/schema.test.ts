@@ -66,16 +66,16 @@ describe('BudgetRequestSchema', () => {
   })
 
   describe('justification', () => {
-    test('too short fails', () => {
-      expect(BudgetRequestSchema.safeParse({ ...valid, justification: 'short' }).success).toBe(false)
+    test('empty string fails', () => {
+      expect(BudgetRequestSchema.safeParse({ ...valid, justification: '' }).success).toBe(false)
+    })
+
+    test('any non-empty justification passes', () => {
+      expect(BudgetRequestSchema.safeParse({ ...valid, justification: 'needed' }).success).toBe(true)
     })
 
     test('too long fails', () => {
       expect(BudgetRequestSchema.safeParse({ ...valid, justification: 'a'.repeat(1001) }).success).toBe(false)
-    })
-
-    test('minimum 10 chars passes', () => {
-      expect(BudgetRequestSchema.safeParse({ ...valid, justification: 'a'.repeat(10) }).success).toBe(true)
     })
   })
 

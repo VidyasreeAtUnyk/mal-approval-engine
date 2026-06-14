@@ -38,7 +38,7 @@ Planned: leave-request, access-request, vendor-payment
 
 - Next.js 14 · TypeScript strict · Tailwind + shadcn/ui
 - Supabase (Postgres + Auth + Realtime)
-- Anthropic Claude API (claude-sonnet-4-6)
+- OpenAI API (gpt-4o-mini)
 - Vercel
 
 ---
@@ -108,7 +108,7 @@ admin@test.com / Test1234!
 - Server-side auth on every API route
 - Role read from DB — never from client
 - Zod validation before any DB write
-- ANTHROPIC_API_KEY server-only (never NEXT_PUBLIC_)
+- OPENAI_API_KEY server-only (never NEXT_PUBLIC_)
 - Tests pass before every commit
 - Append to docs/prompts.md after each task
 - Show git diff before committing — wait for approval
@@ -117,21 +117,21 @@ admin@test.com / Test1234!
 
 ## Build Status
 
-- [ ] CLAUDE.md + docs/ written
-- [ ] Git repo initialized
-- [ ] Supabase project created
-- [ ] Schema + RLS applied via MCP
-- [ ] Auth + 3 test accounts created
-- [ ] Budget request flow config
-- [ ] Engine components built
-- [ ] Claude AI summary working
+- [x] CLAUDE.md + docs/ written
+- [x] Git repo initialized
+- [x] Supabase project created
+- [x] Schema + RLS applied via MCP
+- [x] Auth + 3 test accounts created
+- [x] Budget request flow config
+- [x] Engine components built
+- [x] Claude AI summary working
 - [ ] Notifications (realtime)
-- [ ] Draft persistence
-- [ ] Leave request flow (reusability demo)
-- [ ] Calendar conflict detection
-- [ ] Admin dashboard
-- [ ] Tests passing
+- [x] Draft persistence
+- [x] Leave request flow (reusability demo)
+- [x] Calendar conflict detection
+- [x] Admin dashboard
+- [x] Tests passing (99 tests, 11 suites)
 - [ ] Deployed on Vercel
-- [ ] docs/prompts.md complete
+- [x] docs/prompts.md complete
 - [ ] docs/presentation.md complete
 - [ ] Cowork board updated

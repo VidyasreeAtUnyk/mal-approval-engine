@@ -217,7 +217,7 @@ Build all API routes following the security pattern from docs/security.md. Every
 - `src/app/api/requests/route.ts` — POST (submit/draft) + GET (list own requests). Upsert with idempotency_key, getApprover(), audit log, notification, fire-and-forget AI summarize
 - `src/app/api/requests/[id]/approve/route.ts` — POST: manager/admin only, approver_id check, status→approved, audit + notify requester
 - `src/app/api/requests/[id]/reject/route.ts` — POST: note required, status→rejected, audit + notify requester
-- `src/app/api/ai/summarize/route.ts` — fetches request, calls claude-sonnet-4-6, parses JSON response, stores ai_summary + ai_flags, returns fallback on any error
+- `src/app/api/ai/summarize/route.ts` — fetches request, calls gpt-5.4-mini, parses JSON response, stores ai_summary + ai_flags, returns fallback on any error
 - `src/app/api/ai/assist/route.ts` — takes fieldId + filled formData, calls Claude to draft textarea content, returns { text }
 - `src/__tests__/anthropic.test.ts` — 5 tests mocking @/lib/anthropic: success, API throw, malformed JSON, empty content, context inclusion
 
@@ -233,3 +233,80 @@ Build all API routes following the security pattern from docs/security.md. Every
 
 ### Next
 - Phase 7: All pages (employee dashboard, new request page, request detail, manager dashboard, admin dashboard, user management)
+
+---
+
+## Phase 7 — Pages, Hardening, Draft Persistence, Tests — 2026-06-14
+
+### Prompt
+Build all app pages. Fix bugs found during manual verification. Add draft persistence, withdraw, and admin approval. Harden for production: error boundaries, not-found page, scalable flow UI, extracted business logic, and full test coverage for route-handler logic.
+
+### Built
+**Pages**
+- `src/app/(app)/dashboard/page.tsx` — employee: own requests list, empty state, `NewRequestMenu` for flow selection
+- `src/app/(app)/[flowType]/new/page.tsx` — new request form: draft restore on mount, debounced auto-save, idempotency key, better validation error toasts
+- `src/app/(app)/[flowType]/[id]/page.tsx` — request detail: field display (daterange formatted), `WithdrawButton` for pending/draft
+- `src/app/(app)/manager/dashboard/page.tsx` — manager: pending requests routed to them, sorted by created_at
+- `src/app/(app)/manager/request/[id]/page.tsx` — manager approval view (ApproverView)
+- `src/app/(app)/admin/dashboard/page.tsx` — admin: org-wide requests, filters (dept/flow/status/date), stats cards, department lookup
+- `src/app/(app)/admin/request/[id]/page.tsx` — admin approval view (ApproverView)
+- `src/app/(app)/admin/users/page.tsx` — user list with role badges
+- `src/app/(app)/admin/users/invite/page.tsx` — invite form (email + role)
+- `src/app/(app)/error.tsx` — app-level error boundary (client component, AlertCircle + "Try again")
+- `src/app/(app)/not-found.tsx` — 404 page with "Back to dashboard" link
+
+**New components + lib**
+- `src/engine/WithdrawButton.tsx` — two-step confirm, soft-deletes pending/draft requests, triggers router.push + router.refresh
+- `src/components/layout/NewRequestMenu.tsx` — ≤2 flows: individual buttons; >2 flows: dropdown with outside-click close
+- `src/lib/request-permissions.ts` — pure functions: `requiresApproverFilter`, `canWithdraw`, `canReview`
+- `src/lib/format.ts` — `formatDateRange`: formats daterange objects as "Jun 13 → Jun 20", no raw ISO strings
+- `src/lib/openai.ts` — singleton OpenAI client (gpt-5.4-mini)
+
+**API changes**
+- `src/app/api/requests/[id]/approve/route.ts` — admin bypass: conditionally skips approver_id filter using `requiresApproverFilter(role)`
+- `src/app/api/requests/[id]/reject/route.ts` — same admin bypass pattern
+- `src/app/api/requests/[id]/withdraw/route.ts` — NEW: soft-delete via `deleted_at`; auth check via SSR client, write via service client (RLS blocks requester from writing deleted_at directly)
+- `src/app/api/ai/summarize/route.ts` — team leave overlap detection and ai_flags write both use service client for cross-profile queries
+- `src/app/api/ai/assist/route.ts` — model: gpt-5.4-mini, max_tokens: 300
+- `src/app/api/invites/route.ts` — POST invite with role validation
+
+**Draft persistence**
+- `ApprovalForm` watches all fields, debounces 1.5s, calls `onDraftSave` with idempotency key
+- `[flowType]/new/page.tsx` loads existing draft on mount, reuses same idempotency key so saves upsert the same row
+- Same key on final submit promotes draft to pending — no orphan rows
+- "Saving draft…" / "Draft saved" indicator shown inline
+
+**Sidebar + flow UI scaling**
+- Sidebar: shows first 3 flows, "N more" toggle for additional flows
+- NewRequestMenu: compact dropdown at >2 flows for dashboard header
+- Both patterns scale to any number of flows without UI bloat
+
+**Tests — 99 passing across 11 suites**
+- `src/__tests__/request-permissions.test.ts` — 7 cases for all 3 exported functions
+- `src/__tests__/date-format.test.ts` — 6 cases (multi-day, same-day, partial, non-daterange, null, no raw ISO)
+- `src/__tests__/schema-alignment.test.ts` — verifies each flow's schema accepts minimum form-valid input (catches client/server min-length mismatches)
+- `src/__tests__/anthropic.test.ts` — rewritten: calls real route handler with mocked dependencies; asserts model=gpt-5.4-mini and AED currency in prompt
+- `src/flows/budget-request/schema.test.ts` — updated: justification empty fails, any non-empty passes
+- `src/flows/leave-request/schema.test.ts` — updated: reason empty fails, single char passes
+
+### Decisions
+- **service client pattern**: `createServiceClient()` MUST use plain `createClient` from `@supabase/supabase-js` (not `@supabase/ssr`) — SSR wrapper does NOT bypass RLS even with service role key. Applied to: overlap detection, ai_flags write, withdraw deleted_at write.
+- **Business logic extraction**: route handler rules (who can approve, who can withdraw, who can review) moved to `src/lib/request-permissions.ts` — now independently testable without HTTP layer
+- **Admin approve bypass**: conditional `approver_id` filter rather than a separate admin code path — less code, same security
+- **Draft idempotency**: same `idempotency_key` reused for all draft saves and the final submit. Upsert on that key means one row per form session, no orphan drafts.
+- **Schema alignment**: lowered `justification` and `reason` from `min(10)` to `min(1)` to match HTML `required` validation — `min(10)` caused silent 422s on short but valid input
+
+### Gotchas
+- **Admin 500 on approve**: `.eq('approver_id', user.id)` applied unconditionally — admins have no approver_id on others' requests. Fixed by `requiresApproverFilter(role)`.
+- **Withdraw 500**: RLS blocks the requester from updating `deleted_at` column even on their own row. Must use service client with belt-and-suspenders `.eq('requester_id', user.id)`.
+- **Dashboard stale cache after withdraw**: `router.push('/dashboard')` serves Next.js cached RSC. Fixed by adding `router.refresh()` after push.
+- **Team leave overlap silent failure**: `createServerClient()` (SSR, session-scoped) can't read other users' profiles due to RLS. Switched all overlap + flags-write queries to service client.
+- **Jest `Request is not defined`**: route handlers import `next/server` which needs the Web `Request` global. jsdom doesn't have it. Fixed with `/** @jest-environment node */` directive.
+- **`[...new Set(...)]` build error**: TypeScript downlevelIteration required for Set spread. Fixed with manual dedup filter instead.
+- **AI currency showed `$`**: prompt didn't specify currency. Added "Always use AED" as first line of system prompt; test now asserts it.
+
+### Next
+- Phase 8: Realtime notifications (bell, unread count, mark-read)
+- Phase 9: Draft persistence polish (conflict resolution if same user has draft on two devices)
+- Phase 13: Vercel deployment
+- Phase 14: docs/prompts.md + docs/presentation.md completion

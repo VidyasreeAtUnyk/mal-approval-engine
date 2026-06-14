@@ -100,12 +100,12 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
 
 # Private — server only
 SUPABASE_SERVICE_ROLE_KEY=eyJ...
-ANTHROPIC_API_KEY=sk-ant-...
+OPENAI_API_KEY=sk-ant-...
 ```
 
 Never prefix with NEXT_PUBLIC_:
 - SUPABASE_SERVICE_ROLE_KEY
-- ANTHROPIC_API_KEY
+- OPENAI_API_KEY
 
 ---
 

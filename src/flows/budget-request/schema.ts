@@ -24,7 +24,7 @@ export const BudgetRequestSchema = z.object({
 
   justification: z
     .string()
-    .min(10, 'Please provide at least 10 characters')
+    .min(1, 'Justification is required')
     .max(1000, 'Maximum 1000 characters'),
 
   urgency: z.enum(URGENCIES, { error: 'Please select urgency' }),

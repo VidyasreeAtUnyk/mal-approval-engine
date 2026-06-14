@@ -108,7 +108,7 @@ src/
   lib/
     supabase.ts             ← client-side supabase
     supabase-server.ts      ← server-side supabase
-    anthropic.ts            ← claude client (server only)
+    openai.ts            ← claude client (server only)
     flow-registry.ts        ← imports all flow configs
     approval-router.ts      ← routes to correct approver
     audit.ts                ← logs every state change
@@ -283,5 +283,36 @@ sequenceDiagram
 NEXT_PUBLIC_SUPABASE_URL        ← public, safe
 NEXT_PUBLIC_SUPABASE_ANON_KEY   ← public, safe
 SUPABASE_SERVICE_ROLE_KEY       ← server only
-ANTHROPIC_API_KEY               ← server only
+OPENAI_API_KEY               ← server only
 ```
+
+---
+
+## UI Patterns
+
+### Select Components (`@base-ui/react`)
+
+`@base-ui/react`'s `SelectValue` does **not** automatically render the
+children of the matching `SelectItem`. Always pass an explicit label as
+`children` to `SelectValue` — especially when the stored value is not
+human-readable (UUIDs, raw keys).
+
+**Wrong — renders UUID or raw key in the trigger:**
+```tsx
+<SelectValue placeholder="Select department" />
+```
+
+**Correct — explicit label lookup:**
+```tsx
+<SelectValue placeholder="Select department">
+  {departmentId ? DEPARTMENTS.find(d => d.id === departmentId)?.name : undefined}
+</SelectValue>
+
+<SelectValue placeholder="Select role">
+  {role ? { employee: 'Employee', manager: 'Manager', admin: 'Admin' }[role] : undefined}
+</SelectValue>
+```
+
+This applies to every `Select` in the codebase. When adding a new one,
+always ask: "if the value is an ID or enum key, will this render the
+human label?" If not, add an explicit children lookup.

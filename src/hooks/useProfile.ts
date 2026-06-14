@@ -14,19 +14,22 @@ export function useProfile() {
     async function load() {
       const {
         data: { user },
+        error: authError,
       } = await supabase.auth.getUser()
 
+      if (authError) console.error('[useProfile] auth error:', authError)
       if (!user) {
         setLoading(false)
         return
       }
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single()
 
+      if (error) console.error('[useProfile] profiles fetch error:', error)
       setProfile(data)
       setLoading(false)
     }

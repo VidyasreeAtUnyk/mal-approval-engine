@@ -3,6 +3,7 @@ import { createServerClient } from '@/lib/supabase-server'
 import { getFlow } from '@/lib/flow-registry'
 import { logStatusChange } from '@/lib/audit'
 import { createNotification, buildNotification } from '@/lib/notifications'
+import { requiresApproverFilter, canReview } from '@/lib/request-permissions'
 
 export async function POST(
   req: NextRequest,
@@ -33,21 +34,25 @@ export async function POST(
     )
   }
 
-  if (profile.role === 'employee') {
+  if (!canReview(profile.role)) {
     return NextResponse.json(
       { error: { code: 'FORBIDDEN', message: 'Insufficient permissions' } },
       { status: 403 }
     )
   }
 
-  // 3. Fetch the request — RLS ensures only the assigned approver can see it
-  const { data: request, error: fetchError } = await supabase
+  // 3. Fetch the request — admin can approve any pending request, managers only their own
+  let fetchQuery = supabase
     .from('requests')
     .select('*, profiles!requests_requester_id_fkey(name)')
     .eq('id', params.id)
-    .eq('approver_id', user.id)
     .eq('status', 'pending')
-    .single()
+
+  if (requiresApproverFilter(profile.role)) {
+    fetchQuery = fetchQuery.eq('approver_id', user.id)
+  }
+
+  const { data: request, error: fetchError } = await fetchQuery.single()
 
   if (fetchError || !request) {
     return NextResponse.json(

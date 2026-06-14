@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
-import { anthropic } from '@/lib/anthropic'
+import { openai } from '@/lib/openai'
 
 export async function POST(req: NextRequest) {
   const supabase = createServerClient()
@@ -31,9 +31,9 @@ export async function POST(req: NextRequest) {
     .join('\n')
 
   try {
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 300,
+    const response = await openai.chat.completions.create({
+      model: 'gpt-5.4-mini',
+      max_completion_tokens: 300,
       messages: [
         {
           role: 'user',
@@ -51,14 +51,15 @@ Do not include any personally identifiable information.`,
       ],
     })
 
-    const text = response.content[0]?.type === 'text' ? response.content[0].text.trim() : null
+    const text = response.choices[0]?.message?.content?.trim() ?? null
     if (!text) {
       return NextResponse.json({ text: null })
     }
 
     return NextResponse.json({ text })
-  } catch (err) {
-    console.error('[ai/assist] Claude error:', err)
-    return NextResponse.json({ text: null })
+  } catch (err: unknown) {
+    const e = err as { status?: number; message?: string }
+    console.error('[ai/assist] OpenAI error:', e?.status, e?.message, err)
+    return NextResponse.json({ error: e?.message, text: null })
   }
 }

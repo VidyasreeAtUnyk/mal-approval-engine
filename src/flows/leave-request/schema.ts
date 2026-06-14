@@ -21,7 +21,7 @@ export const LeaveRequestSchema = z.object({
 
   reason: z
     .string()
-    .min(10, 'Please provide at least 10 characters')
+    .min(1, 'Reason is required')
     .max(500, 'Maximum 500 characters'),
 
   handover_notes: z.string().max(500, 'Maximum 500 characters').optional(),

@@ -65,12 +65,12 @@ describe('LeaveRequestSchema', () => {
   })
 
   describe('reason', () => {
-    test('too short fails', () => {
-      expect(LeaveRequestSchema.safeParse({ ...valid, reason: 'short' }).success).toBe(false)
+    test('empty string fails', () => {
+      expect(LeaveRequestSchema.safeParse({ ...valid, reason: '' }).success).toBe(false)
     })
 
-    test('minimum 10 chars passes', () => {
-      expect(LeaveRequestSchema.safeParse({ ...valid, reason: 'a'.repeat(10) }).success).toBe(true)
+    test('any non-empty reason passes', () => {
+      expect(LeaveRequestSchema.safeParse({ ...valid, reason: 'sick' }).success).toBe(true)
     })
 
     test('over 500 chars fails', () => {

@@ -58,7 +58,7 @@ graph TD
   AU --> DB
   DB --> RT
   RT --> N
-  AI -->|claude-sonnet-4-6| AI
+  AI -->|gpt-5.4-mini| AI
 ```
 
 Show:

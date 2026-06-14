@@ -66,7 +66,7 @@ jest.mock('@/lib/supabase-server', () => ({
 }))
 
 // Mock Anthropic
-jest.mock('@anthropic-ai/sdk', () => ({
+jest.mock('openai', () => ({
   default: jest.fn().mockImplementation(() => ({
     messages: {
       create: jest.fn().mockResolvedValue({
@@ -253,3 +253,27 @@ npm test && npm run build
 
 Both must pass. If either fails, fix before committing.
 Claude Code waits for approval before committing.
+
+---
+
+## select-label.test.ts
+
+Tests the label-resolution functions used by `SelectValue` children in
+forms that use `@base-ui/react` Select. Verifies that UUID values and
+raw enum keys are never surfaced as display text in the UI.
+
+```typescript
+describe('getRoleLabel', () => {
+  test('returns capitalized label for each role')
+  test('returns undefined for empty string (no selection)')
+  test('returns undefined for unknown role')
+})
+
+describe('getDepartmentLabel', () => {
+  test('returns name for each department UUID')
+  test('returns undefined for unknown UUID')
+  test('never returns a raw UUID as a label')
+})
+```
+
+See `src/__tests__/select-label.test.ts`.

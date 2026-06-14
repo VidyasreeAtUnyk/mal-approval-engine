@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { formatDistanceToNow, format } from 'date-fns'
+import { formatDateRange } from '@/lib/format'
 import { CheckCircle, XCircle, Clock } from 'lucide-react'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
@@ -94,17 +95,20 @@ export function ApproverView({ request, auditLog = [], requesterName }: Approver
           {flow?.fields.map((f) => {
             const val = formData[f.id]
             if (val === undefined || val === null || val === '') return null
-            const display =
-              typeof val === 'object'
-                ? JSON.stringify(val)
-                : String(val)
-
+            let display: string
+            if (f.type === 'daterange') {
+              display = formatDateRange(val)
+            } else if (f.id === 'amount') {
+              display = `AED ${Number(val).toLocaleString()}`
+            } else if (typeof val === 'object') {
+              display = JSON.stringify(val)
+            } else {
+              display = String(val)
+            }
             return (
               <div key={f.id} className="space-y-0.5">
                 <dt className="text-xs text-[var(--mal-text-soft-400)]">{f.label}</dt>
-                <dd className="text-sm text-[var(--mal-text-strong-950)] font-medium">
-                  {f.id === 'amount' ? `AED ${Number(val).toLocaleString()}` : display}
-                </dd>
+                <dd className="text-sm text-[var(--mal-text-strong-950)] font-medium">{display}</dd>
               </div>
             )
           })}

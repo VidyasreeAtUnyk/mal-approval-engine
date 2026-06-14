@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect, useCallback } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { DateRange } from 'react-day-picker'
 import { FlowConfig } from '@/types/flow.types'
@@ -18,22 +18,52 @@ interface ApprovalFormProps {
   initialData?: Record<string, unknown>
   draftId?: string
   onSubmit: (data: Record<string, unknown>) => Promise<void>
+  onDraftSave?: (data: Record<string, unknown>) => Promise<void>
   submitting?: boolean
 }
+
+type DraftStatus = 'idle' | 'saving' | 'saved'
 
 export function ApprovalForm({
   config,
   initialData,
   onSubmit,
+  onDraftSave,
   submitting,
 }: ApprovalFormProps) {
   const idempotencyKey = useRef(crypto.randomUUID())
   const [aiAssistLoading, setAiAssistLoading] = useState<string | null>(null)
+  const [draftStatus, setDraftStatus] = useState<DraftStatus>('idle')
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const { control, handleSubmit, getValues, setValue, formState: { errors } } =
+  const { control, handleSubmit, getValues, setValue, watch, formState: { errors } } =
     useForm<Record<string, unknown>>({
       defaultValues: initialData ?? {},
     })
+
+  const scheduleDraftSave = useCallback((data: Record<string, unknown>) => {
+    if (!onDraftSave) return
+    if (saveTimer.current) clearTimeout(saveTimer.current)
+    setDraftStatus('idle')
+    saveTimer.current = setTimeout(async () => {
+      setDraftStatus('saving')
+      await onDraftSave({ ...data, _idempotencyKey: idempotencyKey.current })
+      setDraftStatus('saved')
+      savedTimer.current = setTimeout(() => setDraftStatus('idle'), 2000)
+    }, 1500)
+  }, [onDraftSave])
+
+  useEffect(() => {
+    const sub = watch((data) => {
+      scheduleDraftSave(data as Record<string, unknown>)
+    })
+    return () => {
+      sub.unsubscribe()
+      if (saveTimer.current) clearTimeout(saveTimer.current)
+      if (savedTimer.current) clearTimeout(savedTimer.current)
+    }
+  }, [watch, scheduleDraftSave])
 
   async function handleAiAssist(fieldId: string) {
     setAiAssistLoading(fieldId)
@@ -73,7 +103,14 @@ export function ApprovalForm({
               key={field.id}
               name={field.id}
               control={control}
-              rules={field.required ? { required: 'This field is required' } : {}}
+              rules={field.required ? {
+                validate: (v) => {
+                  const r = v as DateRange | undefined
+                  if (!r?.from) return 'Start date is required'
+                  if (!r?.to) return 'Please select an end date'
+                  return true
+                }
+              } : {}}
               render={({ field: { value, onChange } }) => (
                 <CalendarField
                   field={field}
@@ -218,7 +255,7 @@ export function ApprovalForm({
         )
       })}
 
-      <div className="pt-2">
+      <div className="pt-2 flex items-center gap-4">
         <Button
           type="submit"
           disabled={submitting}
@@ -233,6 +270,15 @@ export function ApprovalForm({
             'Submit Request'
           )}
         </Button>
+        {draftStatus === 'saving' && (
+          <span className="text-xs text-[var(--mal-text-soft-400)] flex items-center gap-1">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            Saving draft…
+          </span>
+        )}
+        {draftStatus === 'saved' && (
+          <span className="text-xs text-[var(--mal-text-soft-400)]">Draft saved</span>
+        )}
       </div>
     </form>
   )
