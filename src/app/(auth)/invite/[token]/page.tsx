@@ -147,8 +147,8 @@ export default function InviteAcceptPage({ params }: PageProps) {
       <div className="w-full max-w-sm space-y-6">
         {/* Logo */}
         <div className="flex items-center justify-center gap-2">
-          <div className="w-8 h-8 rounded-mal-8 bg-[var(--mal-purple-500)] flex items-center justify-center">
-            <span className="text-white text-sm font-bold">M</span>
+          <div className="w-8 h-8 rounded-full bg-[var(--mal-purple-500)] flex items-center justify-center">
+            <span className="text-white text-xs font-bold">مال</span>
           </div>
           <span className="font-semibold text-[var(--mal-text-strong-950)]">Mal Approvals</span>
         </div>

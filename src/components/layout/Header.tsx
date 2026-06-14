@@ -24,8 +24,8 @@ export function Header() {
     <header className="h-14 border-b border-[var(--mal-stroke-soft-200)] bg-[var(--mal-bg-white-0)] flex items-center justify-between px-4 shrink-0">
       {/* Logo */}
       <div className="flex items-center gap-2">
-        <div className="w-7 h-7 rounded-mal-8 bg-[var(--mal-purple-500)] flex items-center justify-center">
-          <span className="text-white text-xs font-bold">M</span>
+        <div className="w-7 h-7 rounded-full bg-[var(--mal-purple-500)] flex items-center justify-center">
+          <span className="text-white" style={{ fontSize: '9px', fontWeight: 700 }}>مال</span>
         </div>
         <span className="font-semibold text-sm text-[var(--mal-text-strong-950)]">
           Mal Approvals

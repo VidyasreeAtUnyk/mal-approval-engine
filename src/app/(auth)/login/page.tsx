@@ -54,8 +54,8 @@ export default function LoginPage() {
     <Card className="shadow-mal-fancy-stroke border-[var(--mal-stroke-soft-200)] p-4 md:p-6">
       <CardHeader className="space-y-1 pb-4">
         <div className="flex items-center gap-2 mb-2">
-          <div className="w-8 h-8 rounded-mal-8 bg-[var(--mal-purple-500)] flex items-center justify-center">
-            <span className="text-white text-sm font-bold">M</span>
+          <div className="w-8 h-8 rounded-full bg-[var(--mal-purple-500)] flex items-center justify-center">
+            <span className="text-white text-xs font-bold">مال</span>
           </div>
           <span className="font-semibold text-[var(--mal-text-strong-950)]">Mal</span>
         </div>
