@@ -170,7 +170,9 @@ If this ships:
 - Email notifications — Supabase edge function, one trigger
 - access-request and vendor-payment flows — two files each
 - Bulk approval for admins
-- Performance + SEO polish
+- LCP below 2.5s — stream page shell with Suspense so header + filters paint while DB query runs
+- Remove 56 KiB unused JS — audit shadcn/radix-ui imports with next build bundle analyser
+- Eliminate render-blocking CSS (120ms) — inline critical CSS for above-the-fold content
 
 If this is a prototype:
 - Hand the engine to the team

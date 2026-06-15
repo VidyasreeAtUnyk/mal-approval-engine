@@ -446,3 +446,16 @@ Improve Lighthouse scores on the admin dashboard page. Address LCP (4.6s), TBT (
 - Arabic RTL support
 - access-request and vendor-payment flows
 - Bulk approval for admins
+
+### Lighthouse results after Phase 10
+- Performance: 68 → 81
+- Accessibility: 89 → 100
+- Best Practices: 100
+- SEO: 100
+- TBT: 620ms → 230ms
+- LCP: 4.6s → 4.2s (still above 2.5s target — Supabase fetch latency + render-blocking CSS)
+
+### Remaining performance work (deferred)
+- Suspense streaming on admin dashboard — shell paints at FCP (1.2s), data streams in; would drop LCP to ~1.2s
+- Bundle analysis via `ANALYZE=true next build` — target the 56 KiB unused JS (shadcn/radix-ui)
+- Inline critical CSS — eliminate 120ms render-blocking from Tailwind bundle
