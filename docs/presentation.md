@@ -124,6 +124,8 @@ Show docs/decisions/:
 - Four architecture decisions, written before any code
 - Context, consequences, alternatives rejected
 
+GitHub: https://github.com/VidyasreeAtUnyk/mal-approval-engine
+
 "This isn't a post-mortem. It was written in real time."
 
 ---
@@ -133,12 +135,16 @@ Show docs/decisions/:
 **Built for real:**
 - RLS on every table — no exceptions
 - Audit trail on every status change
-- Idempotency on every submission
+- Idempotency on every submission — draft key promotes to pending on submit, no orphan rows
 - Realtime across three user sessions
 - 101 tests across 11 suites
 - Auth middleware — unauthenticated direct URL access redirects to login
 - Fully responsive — sidebar drawer, mobile-first layouts, no overflow at 375px
 - Lighthouse: 100 Accessibility · 100 Best Practices · 100 SEO · 81 Performance
+- Zero hydration errors — dark mode theme toggle deferred until after mount
+- No CLS in header — fixed-width skeleton holds layout while profile loads
+- Wide-screen safe — sidebar and content share a max-width container, stay centred at any viewport
+- Input validation at both layers — `min={0}` on number inputs + Zod `.positive()` server-side
 
 **Explicitly skipped with a reason:**
 - Email notifications → noted, Supabase edge function pattern documented
@@ -240,7 +246,7 @@ in that context from day one.
 ## Submission Package
 
 - [x] Live URL — https://mal-approval-engine.vercel.app/
+- [x] GitHub repo — https://github.com/VidyasreeAtUnyk/mal-approval-engine
 - [x] Test accounts (3 roles — employee, manager, admin / Test1234!)
-- [x] GitHub repo
 - [x] README with local setup instructions
 - [ ] This presentation (PDF export)

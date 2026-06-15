@@ -420,16 +420,19 @@ const doc = new Document({
       bulletItem('RLS, audit trail, idempotency, realtime, 101 tests'),
       bulletItem('Service client pattern for cross-user DB writes'),
       bulletItem('Role read from DB on every request — never from client'),
+      bulletItem('Auth middleware — unauthenticated direct URL access redirects to login'),
+      bulletItem('Fully responsive — sidebar drawer, mobile-first, no overflow at 375px'),
+      bulletItem('Lighthouse: 100 Accessibility · 100 Best Practices · 100 SEO · 81 Performance'),
       spacer(160),
 
       subheading('Explicitly skipped — with a reason'),
       bulletItem('Email notifications → Supabase edge function pattern documented, not built'),
-      bulletItem('Mobile optimisation → works on mobile, not optimised'),
       bulletItem('Full org chart → three roles covers the real use case'),
       bulletItem('Per-flow DB tables → JSONB + Zod is the right call for a prototype'),
+      bulletItem('LCP below 2.5s → Suspense streaming identified, deferred; current 4.2s is DB latency'),
       spacer(160),
 
-      body('"Most prototypes fake the security layer and call it MVP. This one has RLS, a service client pattern, and an audit log — because at Mal, a prototype sometimes ships."', { bold: true }),
+      body('"Most prototypes fake the security layer and call it MVP. This one has RLS, a service client pattern, an audit log, auth middleware, and a 100 accessibility score — because at Mal, a prototype sometimes ships."', { bold: true }),
 
       pageBreak(),
 
@@ -445,9 +448,10 @@ const doc = new Document({
       ]),
       spacer(240),
       body('Two flows. Three roles. Realtime. AI. 101 tests. Deployed.'),
+      body('Responsive. Auth middleware. 100 Accessibility. 100 SEO.'),
       body('Full docs. Architecture decisions written before code.'),
       spacer(240),
-      body('The remaining time is for performance, SEO, and whatever the team wants to test next.', { muted: true }),
+      body('The remaining time is for Suspense streaming, bundle analysis, and whatever the team wants to test next.', { muted: true }),
 
       spacer(360),
 
@@ -462,7 +466,8 @@ const doc = new Document({
       bulletItem('Email notifications — Supabase edge function, one trigger'),
       bulletItem('access-request and vendor-payment flows — two files each'),
       bulletItem('Bulk approval for admins'),
-      bulletItem('Performance + SEO polish'),
+      bulletItem('LCP below 2.5s — Suspense streaming so shell paints while DB query runs'),
+      bulletItem('Remove 56 KiB unused JS — bundle analyser audit on shadcn/radix-ui imports'),
       spacer(160),
 
       subheading('If this is a prototype'),
