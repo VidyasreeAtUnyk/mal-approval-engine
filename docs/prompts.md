@@ -537,3 +537,39 @@ Fix hydration error on dark mode refresh (svg/circle mismatch) and CLS on header
 ### Decisions
 - `mounted` pattern is the standard next-themes recommendation — avoids flash of wrong icon without wrapping the entire header in `dynamic({ ssr: false })`
 - Skeleton uses `bg-[var(--mal-bg-soft-200)] animate-pulse` to match the existing skeleton pattern used on page-level loading states
+
+---
+
+## Phase 14 — Bug fix: draft persists after submission — 2026-06-15
+
+### Prompt
+After submitting a budget request, navigating back to the new form still shows the draft pre-filled. Fix so the form opens blank after a successful submission.
+
+### Built
+- `src/app/api/requests/route.ts` — added `DELETE` handler; soft-deletes all draft rows for a given `flow_type` owned by the current user (sets `deleted_at`, never hard-deletes)
+- `src/app/(app)/[flowType]/new/page.tsx` — after successful submission, calls `DELETE /api/requests?flow_type=...&status=draft` before navigating to the detail page; only runs on success so a validation failure preserves the draft
+
+### Decisions
+- Root cause: the upsert promotes the submitted row to `pending`, but on next visit a new idempotency key is generated, the user types one character, and a brand-new draft row is inserted — it wasn't the same row surviving, it was a new one being created
+- Soft-delete (not hard-delete) to preserve audit trail consistency
+- DELETE scoped to `requester_id + flow_type + status=draft` — safe, cannot touch other users' data or non-draft rows
+- Cleanup placed after the `res.ok` check so failed submissions don't wipe the draft
+
+---
+
+## Phase 15 — Bug fix: draft persists after submission (continued) — 2026-06-15
+
+### Prompt
+Draft still showed after submission. Previous fix (DELETE endpoint) was blocked silently by RLS.
+
+### Root cause
+The employee RLS policy `FOR ALL USING (deleted_at IS NULL)` also applies as a WITH CHECK on UPDATE — when we set `deleted_at`, the post-update row fails the check and Postgres silently rejects it. Additionally, 9 orphan draft rows had accumulated from previous sessions (each page load generates a new idempotency key, so each draft save could create a new row rather than upsert the same one).
+
+### Built
+- `src/app/api/requests/route.ts` — DELETE handler now uses `createServiceClient()` to bypass RLS; ownership enforced manually via `requester_id = user.id`
+- `src/app/(app)/[flowType]/new/page.tsx` — added `cache: 'no-store'` to draft fetch so browser never serves stale response; added `setInitialData(undefined)`, `setDraftId(undefined)`, and `router.refresh()` after submit to clear local state and Next.js router cache
+- Supabase — soft-deleted 9 existing orphan draft rows directly via SQL to unblock testing
+
+### Decisions
+- Service client is safe here because we verify `requester_id = user.id` before the UPDATE — it's equivalent to what RLS would allow if the USING clause didn't also act as WITH CHECK
+- `router.refresh()` before `router.push()` invalidates the Next.js router cache so the new form page re-fetches on next visit

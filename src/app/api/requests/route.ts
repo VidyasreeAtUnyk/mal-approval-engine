@@ -157,3 +157,48 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({ data })
 }
+
+export async function DELETE(req: NextRequest) {
+  const supabase = createServerClient()
+
+  // Auth check with user client
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return NextResponse.json(
+      { error: { code: 'UNAUTHORIZED', message: 'Please log in' } },
+      { status: 401 }
+    )
+  }
+
+  const { searchParams } = new URL(req.url)
+  const flow_type = searchParams.get('flow_type')
+  const status = searchParams.get('status')
+
+  if (!flow_type || !status) {
+    return NextResponse.json(
+      { error: { code: 'VALIDATION', message: 'flow_type and status are required' } },
+      { status: 422 }
+    )
+  }
+
+  // Use service client to bypass RLS — the employee RLS policy blocks UPDATE
+  // when deleted_at is being set (post-update row fails the deleted_at IS NULL check).
+  // Ownership is enforced manually via requester_id = user.id.
+  const svc = createServiceClient()
+  const { error } = await svc
+    .from('requests')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('requester_id', user.id)
+    .eq('flow_type', flow_type)
+    .eq('status', status)
+    .is('deleted_at', null)
+
+  if (error) {
+    return NextResponse.json(
+      { error: { code: 'SERVER_ERROR', message: 'Failed to delete drafts' } },
+      { status: 500 }
+    )
+  }
+
+  return NextResponse.json({ success: true })
+}

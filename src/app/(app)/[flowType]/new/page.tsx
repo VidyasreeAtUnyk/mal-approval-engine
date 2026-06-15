@@ -21,7 +21,7 @@ export default function NewRequestPage() {
   // Load existing draft on mount
   useEffect(() => {
     if (!flow) return
-    fetch(`/api/requests?flow_type=${flowType}&status=draft`)
+    fetch(`/api/requests?flow_type=${flowType}&status=draft`, { cache: 'no-store' })
       .then(r => r.json())
       .then(({ data }) => {
         if (data && data.length > 0) {
@@ -76,6 +76,14 @@ export default function NewRequestPage() {
         toast.error(msg)
         return
       }
+
+      // Clean up all drafts for this flow so the form opens blank next time
+      await fetch(`/api/requests?flow_type=${flowType}&status=draft`, { method: 'DELETE' }).catch(() => {})
+
+      // Clear local state and router cache so navigating back shows a blank form
+      setInitialData(undefined)
+      setDraftId(undefined)
+      router.refresh()
 
       toast.success('Request submitted successfully!')
       router.push(`/${flowType}/${json.data.id}`)
