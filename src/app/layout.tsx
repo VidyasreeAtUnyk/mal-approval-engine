@@ -4,7 +4,7 @@ import './globals.css'
 import { Providers } from './providers'
 import { Toaster } from 'sonner'
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
+const inter = Inter({ subsets: ['latin'], variable: '--font-sans', display: 'swap', preload: true })
 
 export const metadata: Metadata = {
   title: 'Mal Approval Engine',
@@ -31,6 +31,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href={process.env.NEXT_PUBLIC_SUPABASE_URL} />
+        <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_SUPABASE_URL} />
+      </head>
       <body className="antialiased bg-[var(--mal-bg-white-0)] text-[var(--mal-text-strong-950)]">
         <Providers>
           {children}

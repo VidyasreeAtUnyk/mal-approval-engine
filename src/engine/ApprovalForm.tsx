@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState, useEffect, useCallback } from 'react'
+import dynamic from 'next/dynamic'
 import { useForm, Controller } from 'react-hook-form'
 import { DateRange } from 'react-day-picker'
 import { FlowConfig } from '@/types/flow.types'
@@ -9,7 +10,11 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { CalendarField } from './CalendarField'
+
+const CalendarField = dynamic(() => import('./CalendarField').then(m => m.CalendarField), {
+  loading: () => <div className="h-10 rounded-mal-8 bg-[var(--mal-bg-weak-50)] animate-pulse" />,
+  ssr: false,
+})
 import { Sparkles, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 

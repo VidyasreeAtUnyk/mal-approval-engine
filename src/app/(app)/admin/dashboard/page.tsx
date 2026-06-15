@@ -2,7 +2,6 @@ import { createServerClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
 import { RequestCard } from '@/engine/RequestCard'
 import { Request } from '@/types/flow.types'
-import { RoleGuard } from '@/components/layout/RoleGuard'
 import { FLOW_REGISTRY } from '@/lib/flow-registry'
 import { FilterBar } from '@/components/admin/FilterBar'
 
@@ -32,55 +31,63 @@ function formatAvg(hours: number | null): string {
   return `${Math.round(hours / 24)}d`
 }
 
-async function AdminDashboardContent({ searchParams }: { searchParams: SearchParams }) {
+export default async function AdminDashboard({ searchParams }: { searchParams: SearchParams }) {
   const supabase = createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (profile?.role !== 'admin') redirect('/dashboard')
+
+  // Build filtered query at the DB level
+  const now = new Date()
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+
+  let query = supabase
+    .from('requests')
+    .select('*, profiles!requests_requester_id_fkey(department_id)')
+    .is('deleted_at', null)
+    .neq('status', 'draft')
+    .order('created_at', { ascending: false })
+
+  if (searchParams.flow) query = query.eq('flow_type', searchParams.flow)
+  if (searchParams.status) query = query.eq('status', searchParams.status)
+  if (searchParams.date === 'week') query = query.gte('created_at', weekAgo)
+  else if (searchParams.date === 'month') query = query.gte('created_at', monthStart)
+
   const [{ data: allRequests }, { data: departments }] = await Promise.all([
-    supabase
-      .from('requests')
-      .select('*, profiles!requests_requester_id_fkey(department_id)')
-      .is('deleted_at', null)
-      .neq('status', 'draft')
-      .order('created_at', { ascending: false }),
-    supabase
-      .from('departments')
-      .select('id, name')
-      .order('name'),
+    query,
+    supabase.from('departments').select('id, name').order('name'),
   ])
 
-  const requests = (allRequests ?? []) as RequestWithProfile[]
+  let requests = (allRequests ?? []) as RequestWithProfile[]
   const depts = (departments ?? []) as { id: string; name: string }[]
 
-  // Apply filters (AND conditions)
-  const now = new Date()
-  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+  // Dept filter is client-side only (join field) — apply after fetch
+  if (searchParams.dept) {
+    requests = requests.filter(r => r.profiles?.department_id === searchParams.dept)
+  }
 
-  let filtered = requests
-
-  if (searchParams.dept)
-    filtered = filtered.filter(r => r.profiles?.department_id === searchParams.dept)
-  if (searchParams.flow)
-    filtered = filtered.filter(r => r.flow_type === searchParams.flow)
-  if (searchParams.status)
-    filtered = filtered.filter(r => r.status === searchParams.status)
-  if (searchParams.date === 'week')
-    filtered = filtered.filter(r => new Date(r.created_at) >= weekAgo)
-  else if (searchParams.date === 'month')
-    filtered = filtered.filter(r => new Date(r.created_at) >= monthStart)
-
-  // Stats (all from filtered set)
-  const pendingCount = filtered.filter(r => r.status === 'pending').length
-  const approvedMonth = filtered.filter(r => r.status === 'approved' && new Date(r.updated_at) >= monthStart).length
-  const rejectedMonth = filtered.filter(r => r.status === 'rejected' && new Date(r.updated_at) >= monthStart).length
-  const avgHours = avgDecisionHours(filtered)
-
+  const totalBeforeDeptFilter = searchParams.dept
+    ? (allRequests ?? []).length
+    : requests.length
   const hasFilters = searchParams.dept || searchParams.flow || searchParams.status || searchParams.date
+
+  const monthStartDate = new Date(now.getFullYear(), now.getMonth(), 1)
+  const pendingCount = requests.filter(r => r.status === 'pending').length
+  const approvedMonth = requests.filter(r => r.status === 'approved' && new Date(r.updated_at) >= monthStartDate).length
+  const rejectedMonth = requests.filter(r => r.status === 'rejected' && new Date(r.updated_at) >= monthStartDate).length
+  const avgHours = avgDecisionHours(requests)
+
   const byFlow = FLOW_REGISTRY.map(flow => ({
     flow,
-    requests: filtered.filter(r => r.flow_type === flow.id),
+    requests: requests.filter(r => r.flow_type === flow.id),
   }))
 
   return (
@@ -90,21 +97,18 @@ async function AdminDashboardContent({ searchParams }: { searchParams: SearchPar
         <p className="text-sm text-[var(--mal-text-sub-600)] mt-0.5">All requests across the organisation</p>
       </div>
 
-      {/* Filter bar */}
       <FilterBar
         departments={depts}
         flows={FLOW_REGISTRY.map(f => ({ id: f.id, label: f.label }))}
         current={searchParams}
       />
 
-      {/* Showing count */}
       {hasFilters && (
         <p className="text-xs text-[var(--mal-text-soft-400)]">
-          Showing <span className="font-medium text-[var(--mal-text-sub-600)]">{filtered.length}</span> of {requests.length} requests
+          Showing <span className="font-medium text-[var(--mal-text-sub-600)]">{requests.length}</span> of {totalBeforeDeptFilter} requests
         </p>
       )}
 
-      {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: 'Pending', value: pendingCount, color: 'text-[var(--mal-purple-500)]' },
@@ -120,7 +124,6 @@ async function AdminDashboardContent({ searchParams }: { searchParams: SearchPar
         ))}
       </div>
 
-      {/* Requests by flow */}
       {byFlow.map(({ flow, requests: flowRequests }) => {
         if (flowRequests.length === 0) return null
         return (
@@ -138,7 +141,7 @@ async function AdminDashboardContent({ searchParams }: { searchParams: SearchPar
         )
       })}
 
-      {filtered.length === 0 && (
+      {requests.length === 0 && (
         <div className="text-center py-16">
           <p className="text-sm text-[var(--mal-text-sub-600)]">
             {hasFilters ? 'No requests match the selected filters' : 'No requests submitted yet'}
@@ -146,13 +149,5 @@ async function AdminDashboardContent({ searchParams }: { searchParams: SearchPar
         </div>
       )}
     </div>
-  )
-}
-
-export default function AdminDashboard({ searchParams }: { searchParams: SearchParams }) {
-  return (
-    <RoleGuard allowedRoles={['admin']}>
-      <AdminDashboardContent searchParams={searchParams} />
-    </RoleGuard>
   )
 }

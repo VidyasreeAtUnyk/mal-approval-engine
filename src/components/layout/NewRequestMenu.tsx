@@ -50,6 +50,9 @@ export function NewRequestMenu({ flows }: NewRequestMenuProps) {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(o => !o)}
+        aria-label="New request"
+        aria-expanded={open}
+        aria-haspopup="menu"
         className="inline-flex items-center gap-1.5 rounded-mal-8 bg-[var(--mal-purple-500)] hover:bg-[var(--mal-purple-600)] text-white text-sm font-medium px-3 py-1.5 transition-colors"
       >
         <PlusCircle className="h-4 w-4" />
@@ -58,11 +61,12 @@ export function NewRequestMenu({ flows }: NewRequestMenuProps) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-52 rounded-mal-10 border border-[var(--mal-stroke-soft-200)] bg-[var(--mal-bg-white-0)] shadow-mal-fancy-stroke z-20 py-1">
+        <div role="menu" className="absolute right-0 top-full mt-1 w-52 rounded-mal-10 border border-[var(--mal-stroke-soft-200)] bg-[var(--mal-bg-white-0)] shadow-mal-fancy-stroke z-20 py-1">
           {flows.map(flow => (
             <Link
               key={flow.id}
               href={`/${flow.id}/new`}
+              role="menuitem"
               onClick={() => setOpen(false)}
               className="flex items-center gap-2 px-3 py-2 text-sm text-[var(--mal-text-sub-600)] hover:bg-[var(--mal-bg-weak-50)] hover:text-[var(--mal-text-strong-950)] transition-colors"
             >

@@ -403,3 +403,46 @@ Make the app fully responsive. Sidebar collapses on mobile to a hamburger-trigge
 - Performance + SEO polish (Lighthouse audit)
 - Arabic RTL support
 - access-request and vendor-payment flows
+
+---
+
+## Phase 10 — Performance, Accessibility & Auth Guard — 2026-06-15
+
+### Prompt
+Improve Lighthouse scores on the admin dashboard page. Address LCP (4.6s), TBT (620ms), accessibility failures (button names, contrast), and add auth middleware so unauthenticated direct URL access redirects to login.
+
+### Built
+- `src/middleware.ts` — Next.js middleware that runs before every non-static, non-API route. Calls `supabase.auth.getUser()` and redirects to `/login` if no session. Fixes blank screen on direct URL access to protected routes.
+- `src/context/ProfileContext.tsx` — React context + `ProfileProvider` that fetches profile once per page load. Replaces 4 independent `useProfile()` calls (Sidebar, Header, NotificationBell, RoleGuard) with a single shared fetch.
+- `src/hooks/useProfile.ts` — now re-exports from `ProfileContext`; all existing imports unchanged.
+- `src/app/(app)/layout.tsx` — wraps app shell with `ProfileProvider`.
+- `src/lib/get-user.ts` — `React.cache` wrapper around `supabase.auth.getUser()` to deduplicate calls within a single server render pass.
+- `src/app/(app)/admin/dashboard/page.tsx` — removed `RoleGuard` (was hiding server-rendered content behind client skeleton); role check now inline in server component. DB-level filtering for `flow`, `status`, `date` params; only `dept` filter stays in JS (join field).
+- `src/engine/ApprovalForm.tsx` — `CalendarField` now loaded via `next/dynamic` with `ssr: false`. Removes `react-day-picker` from the initial JS bundle; only loaded when a date-range field is present.
+- `src/app/(auth)/login/page.tsx` — split into server component (card shell) + `LoginForm.tsx` (client island). Card renders in first HTML response; only the form inputs need JS hydration.
+- `src/app/(auth)/login/LoginForm.tsx` — client island with state, handlers, and error display.
+- `src/app/layout.tsx` — `display: swap` + `preload: true` on Inter font; `<link rel="preconnect">` + `dns-prefetch` for Supabase URL.
+- `src/app/globals.css` — `--mal-text-soft-400` darkened `#9e9e9e` → `#767676` (WCAG AA 4.5:1 contrast ratio on white).
+- `src/components/admin/FilterBar.tsx` — `aria-label` added to all 4 Select triggers.
+- `src/components/layout/NewRequestMenu.tsx` — dropdown button: `aria-label`, `aria-expanded`, `aria-haspopup="menu"`, `role="menu"` + `role="menuitem"` on items.
+- `mal-approval-engine-presentation.docx` — regenerated with 6 screenshots in 2-column grid.
+- `src/flows/access-request/` — access-request flow config + schema (planned flow, wired into registry).
+
+### Decisions
+- `RoleGuard` removed from admin dashboard — middleware + server-side role check makes it redundant. Keeping it was the primary cause of LCP 4.6s (it hid server content behind a client-side loading skeleton).
+- Profile context over SWR/React Query — the app has 4 client components that need profile; a single context is simpler and sufficient.
+- `React.cache` not used in pages yet (would require threading `getUser` result down) — `ProfileContext` covers the client-side deduplication which matters more for TBT.
+- `react-day-picker` dynamic import with `ssr: false` — the calendar is never needed on initial render; excluding it cuts the shared bundle by ~40KB.
+- Login page server/client split — the Card, logo, title, and description are static; only the form fields need client JS. This gives the browser something to paint immediately on slow connections.
+
+### Gotchas
+- `RoleGuard` wrapping a server component in a client component means the server-rendered content is hidden behind the client skeleton — the HTML exists in the page source but the user doesn't see it until JS runs and profile loads.
+- `React.cache` is per-request (not global) — safe to use for auth data; does not leak across users.
+- `next/dynamic` with `ssr: false` means the calendar field shows a pulse skeleton on first render — acceptable for a form field that appears below the fold.
+- Middleware must exclude `/api/*` routes — they handle auth internally via `createServerClient`.
+
+### Next
+- Lighthouse re-audit after deploy (target: LCP <2.5s, TBT <200ms, Accessibility 95+)
+- Arabic RTL support
+- access-request and vendor-payment flows
+- Bulk approval for admins
