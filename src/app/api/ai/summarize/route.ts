@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient, createServiceClient } from '@/lib/supabase-server'
 import { openai } from '@/lib/openai'
 import { getFlow } from '@/lib/flow-registry'
+import { rateLimit } from '@/lib/rate-limit'
 
 const FALLBACK = { summary: null, flags: [] }
 
@@ -16,6 +17,23 @@ export async function POST(req: NextRequest) {
       { status: 401 }
     )
   }
+
+  // 2. Rate limit — 20 AI calls per user per minute
+  const { allowed, remaining, resetAt } = rateLimit(`summarize:${user.id}`, { limit: 20, windowMs: 60_000 })
+  if (!allowed) {
+    return NextResponse.json(
+      { error: { code: 'RATE_LIMITED', message: 'Too many requests. Please wait a moment.' } },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Remaining': '0',
+          'X-RateLimit-Reset': String(resetAt),
+          'Retry-After': String(Math.ceil((resetAt - Date.now()) / 1000)),
+        },
+      }
+    )
+  }
+  void remaining
 
   const body = await req.json().catch(() => ({}))
   const { request_id } = body

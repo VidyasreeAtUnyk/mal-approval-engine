@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase-server'
 import { openai } from '@/lib/openai'
+import { rateLimit } from '@/lib/rate-limit'
 
 export async function POST(req: NextRequest) {
   const supabase = createServerClient()
@@ -11,6 +12,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       { error: { code: 'UNAUTHORIZED', message: 'Please log in' } },
       { status: 401 }
+    )
+  }
+
+  // 2. Rate limit — 20 AI calls per user per minute
+  const { allowed, resetAt } = rateLimit(`assist:${user.id}`, { limit: 20, windowMs: 60_000 })
+  if (!allowed) {
+    return NextResponse.json(
+      { error: { code: 'RATE_LIMITED', message: 'Too many requests. Please wait a moment.' } },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Remaining': '0',
+          'X-RateLimit-Reset': String(resetAt),
+          'Retry-After': String(Math.ceil((resetAt - Date.now()) / 1000)),
+        },
+      }
     )
   }
 

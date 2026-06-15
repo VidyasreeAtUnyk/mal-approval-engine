@@ -459,3 +459,45 @@ Improve Lighthouse scores on the admin dashboard page. Address LCP (4.6s), TBT (
 - Suspense streaming on admin dashboard — shell paints at FCP (1.2s), data streams in; would drop LCP to ~1.2s
 - Bundle analysis via `ANALYZE=true next build` — target the 56 KiB unused JS (shadcn/radix-ui)
 - Inline critical CSS — eliminate 120ms render-blocking from Tailwind bundle
+
+---
+
+## Phase 11 — Security Hardening — 2026-06-15
+
+### Prompt
+Security audit covering XSS, CSRF, SQL injection, secrets exposure, auth bypass, and rate limiting. Add security headers and rate limit AI routes.
+
+### Built
+- `next.config.mjs` — security headers on all routes: `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, `Content-Security-Policy` (connect-src scoped to Supabase URL + OpenAI)
+- `src/lib/rate-limit.ts` — in-memory rate limiter keyed by `route:userId`. Sliding window with configurable limit + windowMs. Returns `allowed`, `remaining`, `resetAt`. Swap Map for Upstash Redis when scaling.
+- `src/app/api/ai/summarize/route.ts` — rate limited at 20 calls/user/minute, returns 429 with `Retry-After` + `X-RateLimit-Reset` headers
+- `src/app/api/ai/assist/route.ts` — same rate limit applied
+
+### Security posture after Phase 11
+
+| Threat | Status |
+|---|---|
+| XSS | ✅ React escaping + CSP header |
+| SQL injection | ✅ Supabase query builder only |
+| CSRF | ✅ SameSite cookies via Supabase SSR |
+| Clickjacking | ✅ X-Frame-Options: DENY |
+| Auth bypass | ✅ Middleware + server-side role check + RLS |
+| Secret exposure | ✅ No client-side secrets |
+| MIME sniffing | ✅ X-Content-Type-Options: nosniff |
+| AI route abuse | ✅ 20 req/user/min rate limit |
+
+### Decisions
+- Rate limit keyed by user ID not IP — authenticated internal tool; shared office IP would otherwise block all users
+- In-memory store is sufficient for prototype — resets on restart, no cross-instance sharing on Vercel. Upstash Redis is a one-file swap when needed.
+- `unsafe-inline` and `unsafe-eval` required in CSP — Next.js inlines scripts and Tailwind inlines styles; removing these breaks the app
+- CSP `connect-src` scoped to `NEXT_PUBLIC_SUPABASE_URL` + OpenAI — blocks unexpected outbound connections from client JS
+
+### Gotchas
+- CSP `connect-src` must include `wss:` for Supabase Realtime websocket connections — omitting it silently breaks live notifications
+- `frame-ancestors 'none'` in CSP is redundant with `X-Frame-Options: DENY` but belt-and-suspenders; older browsers respect XFO, modern ones respect CSP
+- Rate limit store is module-level — persists across requests within the same serverless instance but not across cold starts
+
+### Next
+- Swap rate limit store for Upstash Redis for cross-instance consistency
+- Add `Strict-Transport-Security` header (HSTS) — Vercel handles this at the edge but worth adding explicitly
+- CSP reporting endpoint for production monitoring

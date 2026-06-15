@@ -7,6 +7,8 @@
 3. Role read from DB — never from client
 4. Zod validation before any DB write
 5. Sensitive keys never in NEXT_PUBLIC_
+6. Security headers on every route (next.config.mjs)
+7. Rate limit all AI routes — 20 req/user/min
 
 ---
 
@@ -147,6 +149,47 @@ await supabase.from('requests').upsert(
     ignoreDuplicates: true }
 )
 ```
+
+---
+
+## Security Headers
+
+Configured in `next.config.mjs`, applied to all routes:
+
+| Header | Value | Protects against |
+|---|---|---|
+| `X-Content-Type-Options` | `nosniff` | MIME sniffing |
+| `X-Frame-Options` | `DENY` | Clickjacking |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | Referrer leakage |
+| `Permissions-Policy` | camera/mic/geo off | Unwanted API access |
+| `Content-Security-Policy` | scoped to self + Supabase + OpenAI | XSS, injected scripts |
+
+CSP `connect-src` must include `wss:` for Supabase Realtime. `unsafe-inline` and `unsafe-eval` are required by Next.js and Tailwind.
+
+---
+
+## Rate Limiting
+
+AI routes are protected by `src/lib/rate-limit.ts`:
+
+```typescript
+// 20 calls per user per minute on both AI routes
+const { allowed, resetAt } = rateLimit(`summarize:${user.id}`, {
+  limit: 20,
+  windowMs: 60_000,
+})
+if (!allowed) return NextResponse.json({ error: ... }, { status: 429 })
+```
+
+- Keyed by **user ID**, not IP — correct for an authenticated internal tool
+- In-memory store — resets on restart, no cross-instance sharing
+- Swap `Map` for Upstash Redis for production multi-instance deployments
+
+---
+
+## Auth Middleware
+
+`src/middleware.ts` intercepts every non-static, non-API request. Redirects to `/login` if no valid session — prevents blank screen on direct URL access to protected routes.
 
 ---
 

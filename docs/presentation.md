@@ -136,15 +136,19 @@ Show docs/decisions/:
 - Idempotency on every submission
 - Realtime across three user sessions
 - 101 tests across 11 suites
+- Auth middleware — unauthenticated direct URL access redirects to login
+- Fully responsive — sidebar drawer, mobile-first layouts, no overflow at 375px
+- Lighthouse: 100 Accessibility · 100 Best Practices · 100 SEO · 81 Performance
 
 **Explicitly skipped with a reason:**
 - Email notifications → noted, Supabase edge function pattern documented
-- Mobile optimisation → works, not optimised
 - Full org chart → three roles covers the real use case
 - Per-flow DB tables → JSONB + Zod is the right call for a prototype
+- LCP below 2.5s → Suspense streaming identified, deferred; current 4.2s is DB latency
 
 "Most prototypes fake the security layer and call it MVP.
-This one has RLS, a service client pattern, and an audit log
+This one has RLS, a service client pattern, an audit log,
+auth middleware, and a 100 accessibility score
 because at Mal, a prototype sometimes ships."
 
 ---
@@ -157,9 +161,10 @@ This took under 48.
 
 Two flows. Three roles. Realtime. AI. 101 tests. Deployed.
 Full docs. Architecture decisions written before code.
+Responsive. Auth middleware. 100 Accessibility. 100 SEO.
 
-The remaining time is for performance, SEO, and whatever
-the team wants to test next."
+The remaining time is for Suspense streaming, bundle analysis,
+and whatever the team wants to test next."
 
 ---
 
