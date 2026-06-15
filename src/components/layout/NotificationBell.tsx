@@ -89,7 +89,7 @@ export function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-10 w-80 rounded-mal-10 border border-[var(--mal-stroke-soft-200)] bg-[var(--mal-bg-white-0)] shadow-mal-fancy-stroke z-50 overflow-hidden">
+        <div className="fixed left-1/2 -translate-x-1/2 top-14 sm:absolute sm:left-auto sm:translate-x-0 sm:right-0 sm:top-10 w-[min(320px,calc(100vw-2rem))] rounded-mal-10 border border-[var(--mal-stroke-soft-200)] bg-[var(--mal-bg-white-0)] shadow-mal-fancy-stroke z-50 overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--mal-stroke-soft-200)]">
             <span className="text-sm font-semibold text-[var(--mal-text-strong-950)]">Notifications</span>

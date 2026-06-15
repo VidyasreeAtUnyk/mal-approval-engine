@@ -356,3 +356,50 @@ Build notification bell with live updates. Bell shows unread count badge, dropdo
 - Phase 9: Draft persistence polish (conflict resolution if same user has draft on two devices)
 - Phase 13: Vercel deployment
 - Phase 14: docs/prompts.md + docs/presentation.md completion
+
+---
+
+## Phase 9 — Responsive + Polish — 2026-06-15
+
+### Prompt
+Make the app fully responsive. Sidebar collapses on mobile to a hamburger-triggered Sheet drawer. Admin filter bar stacks without overlap. Notification dropdown centers on small screens. All pages get loading skeletons. Favicon and OG meta tags added. Brand mark updated from "M" to Arabic "مال" across all touchpoints.
+
+### Built
+- `src/components/layout/Sidebar.tsx` — refactored into `SidebarContent` (shared) + desktop aside (`hidden md:flex w-56`) + mobile Sheet drawer triggered by fixed hamburger button. Links close the drawer on tap.
+- `src/components/layout/Header.tsx` — `pl-8 md:pl-0` on logo to clear mobile hamburger. Profile name `hidden sm:block`.
+- `src/app/(app)/layout.tsx` — `p-3 md:p-6` + `min-w-0` on main to prevent flex overflow.
+- `src/components/admin/FilterBar.tsx` — `grid grid-cols-2 sm:flex` container; selects `w-full sm:flex-none sm:w-{n}`. Spinner spans both columns on mobile.
+- `src/components/layout/NotificationBell.tsx` — dropdown: `fixed left-1/2 -translate-x-1/2 top-14` on mobile, `absolute right-0 top-10` on sm+. Width: `min(320px, calc(100vw-2rem))`.
+- Admin stat grid: `grid-cols-2 sm:grid-cols-4` (page + loading skeleton).
+- `src/components/ui/sheet.tsx` — added via `npx shadcn@latest add sheet`.
+- **Loading skeletons added for all server-rendered pages:**
+  - `(app)/dashboard/loading.tsx`
+  - `(app)/manager/dashboard/loading.tsx`
+  - `(app)/[flowType]/[id]/loading.tsx`
+  - `(app)/[flowType]/new/loading.tsx`
+  - `(app)/manager/request/[id]/loading.tsx`
+  - `(app)/admin/request/[id]/loading.tsx`
+  - `(app)/admin/users/loading.tsx`
+- `src/app/icon.svg` — Arabic "مال" in white on purple circle; Next.js 14 auto-serves as favicon.
+- `src/app/opengraph-image.tsx` — 1200×630 OG card via `next/og` ImageResponse. Dark gradient, purple grid, logo mark, feature pills.
+- `src/app/layout.tsx` — full OG metadata (metadataBase, openGraph, twitter card).
+- Login, invite, header logo marks: `M` → `مال` with `rounded-full`.
+
+### Decisions
+- Sidebar uses Sheet (slide-in drawer) not bottom nav — internal tools are navigation-heavy; bottom nav would be too cramped.
+- Hamburger button is `fixed` (not inside Header JSX) to avoid coupling Sidebar state to Header component.
+- FilterBar switches to CSS grid on mobile (not flex-wrap) — grid guarantees no overlap; flex-wrap with flex-1 on 4 items collapses unpredictably.
+- Notification dropdown uses `fixed` centering on mobile — `absolute right-0` overflows left on small viewports when the panel is wide.
+- Loading skeletons match page layout shapes (header, cards, list rows) — avoids jarring layout shift when data arrives.
+- Per-route error.tsx not added — app-level `(app)/error.tsx` covers all routes; `notFound()` handles 404 cases directly.
+
+### Gotchas
+- `flex-1` on 4 selects in `flex-wrap` causes them to share rows unpredictably on mobile — 2-column CSS grid is the correct fix.
+- `absolute right-0` for dropdowns positioned near the right edge of a narrow viewport causes the dropdown to bleed off the left side — use `fixed + translate` for centering on mobile.
+- Sheet component must be installed via shadcn CLI (`npx shadcn@latest add sheet`) — not bundled by default.
+- Next.js `loading.tsx` at the `admin/` layout level fires for all admin sub-routes — scope to `admin/dashboard/` specifically if other admin pages have different shapes.
+
+### Next
+- Performance + SEO polish (Lighthouse audit)
+- Arabic RTL support
+- access-request and vendor-payment flows

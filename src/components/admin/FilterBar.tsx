@@ -42,9 +42,9 @@ export function FilterBar({ departments, flows, current }: FilterBarProps) {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:items-center gap-2 w-full">
       <Select value={current.dept ?? 'all'} onValueChange={(v) => update('dept', v ?? null)}>
-        <SelectTrigger className="w-44 border-[var(--mal-stroke-soft-200)] h-8 text-sm">
+        <SelectTrigger className="w-full sm:flex-none sm:w-44 min-w-0 border-[var(--mal-stroke-soft-200)] h-8 text-sm">
           <SelectValue placeholder="All Departments">
             {current.dept ? (departments.find(d => d.id === current.dept)?.name ?? 'All Departments') : 'All Departments'}
           </SelectValue>
@@ -58,7 +58,7 @@ export function FilterBar({ departments, flows, current }: FilterBarProps) {
       </Select>
 
       <Select value={current.flow ?? 'all'} onValueChange={(v) => update('flow', v ?? null)}>
-        <SelectTrigger className="w-40 border-[var(--mal-stroke-soft-200)] h-8 text-sm">
+        <SelectTrigger className="w-full sm:flex-none sm:w-40 min-w-0 border-[var(--mal-stroke-soft-200)] h-8 text-sm">
           <SelectValue placeholder="All Flows">
             {current.flow ? (flows.find(f => f.id === current.flow)?.label ?? 'All Flows') : 'All Flows'}
           </SelectValue>
@@ -72,7 +72,7 @@ export function FilterBar({ departments, flows, current }: FilterBarProps) {
       </Select>
 
       <Select value={current.status ?? 'all'} onValueChange={(v) => update('status', v ?? null)}>
-        <SelectTrigger className="w-32 border-[var(--mal-stroke-soft-200)] h-8 text-sm">
+        <SelectTrigger className="w-full sm:flex-none sm:w-32 min-w-0 border-[var(--mal-stroke-soft-200)] h-8 text-sm">
           <SelectValue placeholder="All Statuses">
             {current.status ? (STATUS_LABELS[current.status] ?? 'All Statuses') : 'All Statuses'}
           </SelectValue>
@@ -86,7 +86,7 @@ export function FilterBar({ departments, flows, current }: FilterBarProps) {
       </Select>
 
       <Select value={current.date ?? 'all'} onValueChange={(v) => update('date', v ?? null)}>
-        <SelectTrigger className="w-36 border-[var(--mal-stroke-soft-200)] h-8 text-sm">
+        <SelectTrigger className="w-full sm:flex-none sm:w-36 min-w-0 border-[var(--mal-stroke-soft-200)] h-8 text-sm">
           <SelectValue placeholder="All Time">
             {current.date ? (DATE_LABELS[current.date] ?? 'All Time') : 'All Time'}
           </SelectValue>
@@ -99,7 +99,9 @@ export function FilterBar({ departments, flows, current }: FilterBarProps) {
       </Select>
 
       {loading && (
-        <Loader2 className="h-4 w-4 animate-spin text-[var(--mal-text-soft-400)]" />
+        <div className="col-span-2 sm:col-span-1 flex justify-center sm:justify-start">
+          <Loader2 className="h-4 w-4 animate-spin text-[var(--mal-text-soft-400)]" />
+        </div>
       )}
     </div>
   )

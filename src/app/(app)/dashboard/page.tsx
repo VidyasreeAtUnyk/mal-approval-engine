@@ -35,7 +35,7 @@ export default async function EmployeeDashboard() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 sm:grid-cols-3 gap-3">
         {[
           { label: 'Pending', count: pending.length, color: 'text-[var(--mal-purple-500)]' },
           { label: 'Approved', count: approved.length, color: 'text-green-600' },

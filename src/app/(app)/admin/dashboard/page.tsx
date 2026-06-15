@@ -105,7 +105,7 @@ async function AdminDashboardContent({ searchParams }: { searchParams: SearchPar
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: 'Pending', value: pendingCount, color: 'text-[var(--mal-purple-500)]' },
           { label: 'Approved (month)', value: approvedMonth, color: 'text-green-600' },

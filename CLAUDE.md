@@ -112,6 +112,7 @@ admin@test.com / Test1234!
 - Tests pass before every commit
 - Append to docs/prompts.md after each task
 - Show git diff before committing — wait for approval
+- Mobile-first: every new component must work on 375px viewport — no fixed widths that overflow, use CSS grid not flex-wrap for multi-item rows, use fixed+translate for dropdowns near viewport edges
 
 ---
 
@@ -133,5 +134,6 @@ admin@test.com / Test1234!
 - [x] Tests passing (99 tests, 11 suites)
 - [x] Deployed on Vercel — https://mal-approval-engine.vercel.app/
 - [x] docs/prompts.md complete
-- [ ] docs/presentation.md complete
+- [x] docs/presentation.md complete
+- [x] Responsive — sidebar drawer, mobile skeletons, filter grid, notification centering
 - [x] Cowork board — N/A (solo project; noted in presentation)

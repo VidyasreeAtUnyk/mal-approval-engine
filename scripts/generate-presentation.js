@@ -1,7 +1,7 @@
 const {
   Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
   Header, Footer, AlignmentType, BorderStyle, WidthType, ShadingType,
-  HeadingLevel, PageNumber, PageBreak, ExternalHyperlink,
+  HeadingLevel, PageNumber, PageBreak, ExternalHyperlink, ImageRun,
 } = require('docx')
 const fs = require('fs')
 
@@ -138,6 +138,39 @@ function statRow(items) {
 
 function pageBreak() {
   return new Paragraph({ children: [new PageBreak()] })
+}
+
+function screenshotGrid(pairs) {
+  // pairs: [{ file, caption }, { file, caption }] — two per row
+  const border = { style: BorderStyle.SINGLE, size: 1, color: BORDER_COLOR }
+  const borders = { top: border, bottom: border, left: border, right: border }
+  return pairs.map(([left, right]) => {
+    const cells = [left, right].map(item => {
+      const imgData = fs.readFileSync(item.file)
+      return new TableCell({
+        borders,
+        margins: { top: 100, bottom: 100, left: 100, right: 100 },
+        width: { size: 4680, type: WidthType.DXA },
+        children: [
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { before: 0, after: 60 },
+            children: [new ImageRun({ type: 'png', data: imgData, transformation: { width: 300, height: 188 }, altText: { title: item.caption, description: item.caption, name: item.caption } })],
+          }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { before: 0, after: 0 },
+            children: [new TextRun({ text: item.caption, font: 'Arial', size: 18, color: GRAY })],
+          }),
+        ],
+      })
+    })
+    return new Table({
+      width: { size: 9360, type: WidthType.DXA },
+      columnWidths: [4680, 4680],
+      rows: [new TableRow({ children: cells })],
+    })
+  }).flatMap(t => [t, spacer(120)])
 }
 
 const doc = new Document({
@@ -333,6 +366,24 @@ const doc = new Document({
       bulletItem('Draft auto-save (1.5s debounce) with cross-device restore'),
       bulletItem('Soft delete — withdrawn requests are never permanently removed'),
       bulletItem('Error boundary and 404 page'),
+
+      spacer(200),
+      subheading('Screenshots'),
+      spacer(80),
+      ...screenshotGrid([
+        [
+          { file: 'screenshots/Employee dashboard.png', caption: 'Employee dashboard' },
+          { file: 'screenshots/budget request form.png', caption: 'Budget request form' },
+        ],
+        [
+          { file: 'screenshots/Request detail with AI Summary.png', caption: 'AI summary on submission' },
+          { file: 'screenshots/notification.png', caption: 'Realtime notification bell' },
+        ],
+        [
+          { file: 'screenshots/manager approval.png', caption: 'Manager approval view' },
+          { file: 'screenshots/admin dashboard.png', caption: 'Admin org-wide dashboard' },
+        ],
+      ]),
 
       pageBreak(),
 
