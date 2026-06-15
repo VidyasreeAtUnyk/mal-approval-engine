@@ -522,3 +522,18 @@ Fix sidebar drifting from content on wide screens (4000px), money field acceptin
 
 ### Next
 - Add `min` to flow config field definition so flows can specify their own min/max per field
+
+---
+
+## Phase 13 — Bug fixes: dark mode hydration error, header CLS — 2026-06-15
+
+### Prompt
+Fix hydration error on dark mode refresh (svg/circle mismatch) and CLS on header right side while profile loads.
+
+### Built
+- `src/components/layout/Header.tsx` — added `mounted` state; theme toggle icon (`Sun`/`Moon`) only renders after mount so server and first client render both produce an empty button, eliminating the svg hydration mismatch
+- `src/components/layout/Header.tsx` — replaced `{profile && ...}` with a fixed-width skeleton (two text lines, avatar circle, sign-out button placeholder) that shows while profile loads; dimensions match the real content exactly so the right side of the header holds its width from first paint
+
+### Decisions
+- `mounted` pattern is the standard next-themes recommendation — avoids flash of wrong icon without wrapping the entire header in `dynamic({ ssr: false })`
+- Skeleton uses `bg-[var(--mal-bg-soft-200)] animate-pulse` to match the existing skeleton pattern used on page-level loading states

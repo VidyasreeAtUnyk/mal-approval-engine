@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
@@ -12,6 +13,8 @@ export function Header() {
   const { theme, setTheme } = useTheme()
   const { profile } = useProfile()
   const router = useRouter()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
 
   async function handleSignOut() {
     const supabase = createClient()
@@ -45,32 +48,43 @@ export function Header() {
           className="h-8 w-8 text-[var(--mal-text-sub-600)] hover:bg-[var(--mal-bg-weak-50)]"
           aria-label="Toggle dark mode"
         >
-          {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          {mounted && (theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />)}
         </Button>
 
-        {/* User + sign out */}
-        {profile && (
-          <div className="flex items-center gap-2">
-            <div className="text-right hidden sm:block">
-              <p className="text-xs font-medium text-[var(--mal-text-strong-950)]">{profile.name}</p>
-              <p className="text-xs text-[var(--mal-text-soft-400)] capitalize">{profile.role}</p>
-            </div>
-            <div className="w-7 h-7 rounded-full bg-[var(--mal-alpha-purple-10)] border border-[var(--mal-alpha-purple-24)] flex items-center justify-center">
-              <span className="text-xs font-semibold text-[var(--mal-purple-600)]">
-                {profile.name[0].toUpperCase()}
-              </span>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleSignOut}
-              className="h-8 w-8 text-[var(--mal-text-soft-400)] hover:text-destructive hover:bg-red-50"
-              aria-label="Sign out"
-            >
-              <LogOut className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
+        {/* User + sign out — fixed-width placeholder prevents CLS while profile loads */}
+        <div className="flex items-center gap-2">
+          {profile ? (
+            <>
+              <div className="text-right hidden sm:block">
+                <p className="text-xs font-medium text-[var(--mal-text-strong-950)]">{profile.name}</p>
+                <p className="text-xs text-[var(--mal-text-soft-400)] capitalize">{profile.role}</p>
+              </div>
+              <div className="w-7 h-7 rounded-full bg-[var(--mal-alpha-purple-10)] border border-[var(--mal-alpha-purple-24)] flex items-center justify-center">
+                <span className="text-xs font-semibold text-[var(--mal-purple-600)]">
+                  {profile.name[0].toUpperCase()}
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleSignOut}
+                className="h-8 w-8 text-[var(--mal-text-soft-400)] hover:text-destructive hover:bg-red-50"
+                aria-label="Sign out"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </>
+          ) : (
+            <>
+              <div className="hidden sm:flex flex-col items-end gap-1">
+                <div className="h-3 w-20 rounded bg-[var(--mal-bg-soft-200)] animate-pulse" />
+                <div className="h-3 w-12 rounded bg-[var(--mal-bg-soft-200)] animate-pulse" />
+              </div>
+              <div className="w-7 h-7 rounded-full bg-[var(--mal-bg-soft-200)] animate-pulse" />
+              <div className="w-8 h-8 rounded bg-[var(--mal-bg-soft-200)] animate-pulse" />
+            </>
+          )}
+        </div>
       </div>
       </div>
     </header>
