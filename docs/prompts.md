@@ -501,3 +501,24 @@ Security audit covering XSS, CSRF, SQL injection, secrets exposure, auth bypass,
 - Swap rate limit store for Upstash Redis for cross-instance consistency
 - Add `Strict-Transport-Security` header (HSTS) — Vercel handles this at the edge but worth adding explicitly
 - CSP reporting endpoint for production monitoring
+
+---
+
+## Phase 12 — Bug fixes: wide-screen layout, negative amount, draft-overwrite race — 2026-06-15
+
+### Prompt
+Fix sidebar drifting from content on wide screens (4000px), money field accepting negative numbers, and submitted requests staying as "draft" in dashboard.
+
+### Built
+- `src/app/(app)/layout.tsx` — wrapped sidebar+main in `max-w-screen-xl mx-auto` so they stay centered together at wide viewports; moved `bg-[var(--mal-bg-weak-50)]` to outer div so background still fills full width
+- `src/components/layout/Header.tsx` — wrapped header inner content in matching `max-w-screen-xl mx-auto` div so logo and actions align with the sidebar at all widths
+- `src/engine/ApprovalForm.tsx` — added `min={0}` to number inputs; browser now prevents negative values at the HTML level (Zod `.positive()` remains as server-side backup)
+- `src/engine/ApprovalForm.tsx` — clear both draft save timers (`saveTimer`, `savedTimer`) inside `onFormSubmit` before calling `onSubmit`; prevents the 1.5s debounced draft save from firing after submit and overwriting `status: 'pending'` back to `'draft'`
+
+### Decisions
+- `max-w-screen-xl` (1280px) chosen as the cap — wide enough for the admin filter bar, consistent with most internal tool conventions
+- Draft timer cancellation placed in `onFormSubmit` (inside the form, before the parent's `handleSubmit`) so it fires regardless of what the parent does
+- `min={0}` on all `type="number"` fields generically, not just amount — future number fields will inherit the same protection
+
+### Next
+- Add `min` to flow config field definition so flows can specify their own min/max per field

@@ -7,11 +7,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <ProfileProvider>
       <div className="flex flex-col min-h-screen">
         <Header />
-        <div className="flex flex-1">
-          <Sidebar />
-          <main className="flex-1 p-3 md:p-6 bg-[var(--mal-bg-weak-50)] min-w-0">
-            {children}
-          </main>
+        <div className="flex flex-1 bg-[var(--mal-bg-weak-50)]">
+          <div className="flex flex-1 w-full max-w-screen-xl mx-auto">
+            <Sidebar />
+            <main className="flex-1 p-3 md:p-6 min-w-0">
+              {children}
+            </main>
+          </div>
         </div>
       </div>
     </ProfileProvider>

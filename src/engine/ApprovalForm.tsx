@@ -94,6 +94,9 @@ export function ApprovalForm({
   }
 
   async function onFormSubmit(data: Record<string, unknown>) {
+    // Cancel any pending draft save so it can't overwrite status back to 'draft'
+    if (saveTimer.current) clearTimeout(saveTimer.current)
+    if (savedTimer.current) clearTimeout(savedTimer.current)
     await onSubmit({ ...data, _idempotencyKey: idempotencyKey.current })
   }
 
@@ -239,6 +242,7 @@ export function ApprovalForm({
                 </Label>
                 <Input
                   type={field.type === 'number' ? 'number' : field.type === 'email' ? 'email' : field.type === 'date' ? 'date' : 'text'}
+                  min={field.type === 'number' ? 0 : undefined}
                   value={value as string ?? ''}
                   onChange={(e) =>
                     onChange(field.type === 'number' ? Number(e.target.value) : e.target.value)
