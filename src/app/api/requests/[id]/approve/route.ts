@@ -79,7 +79,7 @@ export async function POST(
   }
 
   // 6. Audit + notify requester
-  await logStatusChange(params.id, user.id, 'pending', 'approved', note, supabase)
+  await logStatusChange(params.id, user.id, 'pending', 'approved', note)
 
   const flow = getFlow(request.flow_type)
   const requesterName = (request.profiles as { name: string } | null)?.name ?? 'User'

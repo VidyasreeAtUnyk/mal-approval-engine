@@ -1,51 +1,52 @@
 import { logStatusChange } from '@/lib/audit'
-import { SupabaseClient } from '@supabase/supabase-js'
 
-function makeMock(error: unknown = null) {
-  return {
-    from: jest.fn().mockReturnValue({
-      insert: jest.fn().mockResolvedValue({ error }),
-    }),
-  } as unknown as SupabaseClient
-}
+const mockInsert = jest.fn()
+
+jest.mock('@/lib/supabase-server', () => ({
+  createServiceClient: () => ({
+    from: jest.fn().mockReturnValue({ insert: mockInsert }),
+  }),
+}))
+
+beforeEach(() => {
+  mockInsert.mockResolvedValue({ error: null })
+})
 
 describe('logStatusChange', () => {
   test('logs draft → pending correctly', async () => {
-    const supabase = makeMock()
     await expect(
-      logStatusChange('req-1', 'user-1', 'draft', 'pending', null, supabase)
+      logStatusChange('req-1', 'user-1', 'draft', 'pending', null)
     ).resolves.toBeUndefined()
-    expect(supabase.from).toHaveBeenCalledWith('request_audit_log')
+    expect(mockInsert).toHaveBeenCalledWith(
+      expect.objectContaining({ from_status: 'draft', to_status: 'pending' })
+    )
   })
 
   test('logs pending → approved correctly', async () => {
-    const supabase = makeMock()
-    await logStatusChange('req-1', 'mgr-1', 'pending', 'approved', null, supabase)
-    expect(supabase.from).toHaveBeenCalledWith('request_audit_log')
+    await logStatusChange('req-1', 'mgr-1', 'pending', 'approved', null)
+    expect(mockInsert).toHaveBeenCalledWith(
+      expect.objectContaining({ from_status: 'pending', to_status: 'approved' })
+    )
   })
 
   test('logs pending → rejected correctly', async () => {
-    const supabase = makeMock()
-    await logStatusChange('req-1', 'mgr-1', 'pending', 'rejected', 'Not enough budget', supabase)
-    expect(supabase.from).toHaveBeenCalledWith('request_audit_log')
+    await logStatusChange('req-1', 'mgr-1', 'pending', 'rejected', 'Not enough budget')
+    expect(mockInsert).toHaveBeenCalledWith(
+      expect.objectContaining({ to_status: 'rejected' })
+    )
   })
 
   test('includes approver note when provided', async () => {
-    const insertFn = jest.fn().mockResolvedValue({ error: null })
-    const supabase = {
-      from: jest.fn().mockReturnValue({ insert: insertFn }),
-    } as unknown as SupabaseClient
-
-    await logStatusChange('req-1', 'mgr-1', 'pending', 'rejected', 'Budget exceeded', supabase)
-    expect(insertFn).toHaveBeenCalledWith(
+    await logStatusChange('req-1', 'mgr-1', 'pending', 'rejected', 'Budget exceeded')
+    expect(mockInsert).toHaveBeenCalledWith(
       expect.objectContaining({ note: 'Budget exceeded', to_status: 'rejected' })
     )
   })
 
   test('handles DB error gracefully without throwing', async () => {
-    const supabase = makeMock({ message: 'DB connection failed' })
+    mockInsert.mockResolvedValueOnce({ error: { message: 'DB connection failed' } })
     await expect(
-      logStatusChange('req-1', 'user-1', 'draft', 'pending', null, supabase)
+      logStatusChange('req-1', 'user-1', 'draft', 'pending', null)
     ).resolves.toBeUndefined()
   })
 })

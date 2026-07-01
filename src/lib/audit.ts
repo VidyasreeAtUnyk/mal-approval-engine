@@ -1,4 +1,4 @@
-import { SupabaseClient } from '@supabase/supabase-js'
+import { createServiceClient } from '@/lib/supabase-server'
 import { RequestStatus } from '@/types/flow.types'
 
 export async function logStatusChange(
@@ -7,8 +7,8 @@ export async function logStatusChange(
   fromStatus: RequestStatus | null,
   toStatus: RequestStatus,
   note: string | null,
-  supabase: SupabaseClient
 ): Promise<void> {
+  const supabase = createServiceClient()
   const { error } = await supabase.from('request_audit_log').insert({
     request_id: requestId,
     changed_by: changedBy,

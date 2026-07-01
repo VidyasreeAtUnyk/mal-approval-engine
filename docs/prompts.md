@@ -601,3 +601,34 @@ was already submitted, there is nothing to restore.
 Status filters on "resume where you left off" queries create ghost
 state. The correct pattern is: fetch latest, inspect status, decide.
 Never filter by the thing you are about to check.
+
+---
+
+## Phase 17 — Audit log not appearing in UI
+
+### What changed
+- `src/lib/audit.ts`: dropped the `supabase` parameter; `logStatusChange` now
+  creates its own service client internally via `createServiceClient()`.
+- `src/app/api/requests/route.ts`, `approve/route.ts`, `reject/route.ts`:
+  removed the trailing `supabase` argument from all three `logStatusChange` calls.
+- `src/__tests__/audit.test.ts`: replaced client-injection mock with a module-level
+  `jest.mock('@/lib/supabase-server', ...)` that stubs `createServiceClient`.
+
+### Why
+The RLS on `request_audit_log` only had:
+- `audit_own_requests` — SELECT only for employees
+- `admins_all_audit` — FOR ALL (admins only)
+
+There was no INSERT policy for employees or managers. `logStatusChange` was
+accepting the caller's session client, so when an employee submitted or a manager
+approved, the INSERT silently failed (RLS blocked it, error was logged server-side
+but never surfaced). The audit table stayed empty → the History section never
+rendered.
+
+Audit writes are a system concern, not a user action — the service client is the
+right tool regardless of who triggered the status change.
+
+### Lesson learned
+Any function that writes to a table restricted by RLS must either use a service
+client or explicitly have an INSERT policy for every role that will call it.
+"It works for admin" is not enough — test with the lowest-privilege role first.

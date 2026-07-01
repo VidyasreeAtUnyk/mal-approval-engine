@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
 
   // 8. On submission: audit + notify + trigger AI summary
   if (status === 'pending') {
-    await logStatusChange(request.id, user.id, 'draft', 'pending', null, supabase)
+    await logStatusChange(request.id, user.id, 'draft', 'pending', null)
 
     if (approver_id) {
       const { title, message } = buildNotification(
