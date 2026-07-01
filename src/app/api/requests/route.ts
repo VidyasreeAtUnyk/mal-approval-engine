@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase-server'
+import { createServerClient, createServiceClient } from '@/lib/supabase-server'
 import { getFlow } from '@/lib/flow-registry'
 import { getSchema } from '@/lib/schema-registry'
 import { getApprover } from '@/lib/approval-router'

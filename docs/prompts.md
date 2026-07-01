@@ -573,3 +573,31 @@ The employee RLS policy `FOR ALL USING (deleted_at IS NULL)` also applies as a W
 ### Decisions
 - Service client is safe here because we verify `requester_id = user.id` before the UPDATE — it's equivalent to what RLS would allow if the USING clause didn't also act as WITH CHECK
 - `router.refresh()` before `router.push()` invalidates the Next.js router cache so the new form page re-fetches on next visit
+
+---
+
+## Phase 16 — Draft fetch bug fix
+
+### What changed
+- `src/app/(app)/[flowType]/new/page.tsx`: fetch URL changed from
+  `/api/requests?flow_type=${flowType}&status=draft` to
+  `/api/requests?flow_type=${flowType}` (no status filter).
+  The check now reads `if (latest && latest.status === 'draft')` —
+  only restores form data when the latest request is still a draft.
+- `src/app/api/requests/route.ts`: added `createServiceClient` to the
+  import (it was used in the DELETE handler but missing from the import
+  line, causing the build to fail).
+
+### Why
+Filtering by `status=draft` at query time is incorrect. If the DELETE
+cleanup after submission fails or races, a soft-deleted row might still
+be visible momentarily — but more importantly, the query is semantically
+wrong: the question is not "does a draft exist?" but "is my latest
+request a draft?". Fetching the latest record regardless of status and
+then inspecting it gives the right answer: if the most recent request
+was already submitted, there is nothing to restore.
+
+### Lesson learned
+Status filters on "resume where you left off" queries create ghost
+state. The correct pattern is: fetch latest, inspect status, decide.
+Never filter by the thing you are about to check.

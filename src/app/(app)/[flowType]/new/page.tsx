@@ -18,19 +18,23 @@ export default function NewRequestPage() {
   const [loadingDraft, setLoadingDraft] = useState(true)
   const idempotencyKey = useRef(crypto.randomUUID())
 
-  // Load existing draft on mount
+  // Load existing draft on mount.
+  // Fetch the latest request regardless of status — only restore if it is
+  // still a draft. If it was already submitted (pending/approved/rejected),
+  // the form opens blank. This prevents a stale draft surfacing when the
+  // DELETE cleanup after submission fails or races.
   useEffect(() => {
     if (!flow) return
-    fetch(`/api/requests?flow_type=${flowType}&status=draft`, { cache: 'no-store' })
+    fetch(`/api/requests?flow_type=${flowType}`, { cache: 'no-store' })
       .then(r => r.json())
       .then(({ data }) => {
-        if (data && data.length > 0) {
-          const draft = data[0]
-          setDraftId(draft.id)
-          setInitialData(draft.form_data)
+        const latest = data?.[0]
+        if (latest && latest.status === 'draft') {
+          setDraftId(latest.id)
+          setInitialData(latest.form_data)
           // Reuse the draft's idempotency key so we upsert over it
-          if (draft.idempotency_key) {
-            idempotencyKey.current = draft.idempotency_key
+          if (latest.idempotency_key) {
+            idempotencyKey.current = latest.idempotency_key
           }
         }
       })
